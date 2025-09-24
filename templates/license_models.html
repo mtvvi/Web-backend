@@ -1,0 +1,46 @@
+<html lang="ru">
+<head>
+    <title>Модели лицензирования</title>
+    <link rel="stylesheet" href="/static/styles/license_models.css">
+</head>
+<body>
+    <div class="header">
+        <a href="/license-models" style="text-decoration: none; color: black;">
+            <div class="doc-icon"></div>
+        </a>
+    </div>
+    
+    <div class="cart-header">
+        <a href="/license-calculator" class="cart">
+            <img src="http://localhost:9000/img/cart.png" alt="Корзина">
+            <div class="cart-count">{{ .cartCount }}</div>
+        </a>
+    </div>
+    
+    <div class="content">
+        <div class="top-bar">
+            <div class="title">Модели лицензирования</div>
+        </div>
+        
+        <form class="search-form" action="/license-models" method="GET">
+            <input class="search-input" type="text" name="query" placeholder="Поиск модели лицензирования" value="{{ .query }}">
+            <!-- value="{{ .query }}" нужно для того, чтобы из обработчика передавать
+            введенный запрос обратно на страницу. Тем самым введенный текст в поле поиска будет сохраняться-->
+            <button class="search-btn" type="submit">Найти</button>
+        </form>
+        
+        <div class="cards">
+            {{ range .models }}
+            <div class="card">
+                <div class="card-icon">
+                    <img src="http://localhost:9000/img/{{ .Icon }}" alt="{{ .Name }}">
+                </div>
+                <div class="card-title">{{ .Name }}</div>
+                <div class="card-desc">{{ .Description }}</div>
+                <a href="/model/{{ .ID }}" class="card-btn">Подробнее</a>
+            </div>
+            {{ end }}
+        </div>
+    </div>
+</body>
+</html>

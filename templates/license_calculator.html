@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Калькулятор лицензирования</title>
+    <link rel="stylesheet" href="/static/styles/license_models.css">
+</head>
+<body>
+    <div class="header">
+        <a href="/license-models" style="text-decoration: none; color: black;">
+            <div class="doc-icon"></div>
+        </a>
+    </div>
+    
+
+    <main class="container calculator-wrap">
+        <h1 class="calculator-title">Моя заявка на расчет стоимости лицензирования</h1>
+        
+        <div class="form-section">
+            <div class="form-row">
+                <label>Количество пользователей</label>
+                <input type="number" id="users" value="50" class="form-input">
+            </div>
+            <div class="form-row">
+                <label>Количество серверов</label>
+                <input type="number" id="servers" value="15" class="form-input">
+            </div>
+            <div class="form-row">
+                <label>Общее количество ядер</label>
+                <input type="number" id="cores" value="128" class="form-input">
+            </div>
+            <div class="form-row">
+                <label>Период лицензии (лет)</label>
+                <input type="number" id="period" value="5" class="form-input">
+            </div>
+            <div class="form-row">
+                <label>Объем данных (ТБ)</label>
+                <input type="number" id="data" value="8192" class="form-input">
+            </div>
+        </div>
+
+        <section class="cart-list">
+            {{ range .models }}
+            <article class="cart-item">
+                <img src="http://localhost:9000/img/{{ .Icon }}" alt="{{ .Name }}" class="license-image">
+                <div class="license-info">
+                    <div class="building-name">{{ .Name }}</div>
+                    <div class="building-desc">{{ .Description }}</div>
+                </div>
+                <div class="price-info">
+                    <div class="price-label">Цена за единицу</div>
+                    <div class="price-value">{{ .BasePrice }}</div>
+                </div>
+                <div class="coefficient-inputs">
+                    <div class="coeff-group">
+                        <span>Коэф. поддержки:</span>
+                        <input type="number" step="0.01" value="{{ .SupportCoeff }}" class="coeff-input">
+                    </div>
+                    <div class="coeff-group">
+                        <span>Коэф. скидки:</span>
+                        <input type="number" step="0.01" value="{{ .DiscountCoeff }}" class="coeff-input">
+                    </div>
+                </div>
+                <div class="price-result">
+                    <span class="final-price">531600 руб</span>
+                </div>
+            </article>
+            {{ end }}
+        </section>
+    </main>
+
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{ .model.Name }} - Детали лицензии</title>
+    <link rel="stylesheet" href="/static/styles/license_models.css">
+</head>
+<body>
+    <div class="header">
+        <a href="/license-models" style="text-decoration: none; color: black;">
+            <div class="doc-icon"></div>
+        </a>
+    </div>
+
+    <main class="container model-detail-wrap">
+        <div class="model-detail-card">
+            <div class="model-icon-large">
+                <img src="http://localhost:9000/img/{{ .model.Icon }}" alt="{{ .model.Name }}" class="model-detail-image">
+            </div>
+            
+            <div class="model-detail-content">
+                <h1 class="model-detail-title">{{ .model.Name }}</h1>
+                <div class="model-detail-desc">{{ .model.Description }}</div>
+                <div class="model-detail-price">
+                    <span>Цена (тыс. руб.): {{ .model.BasePrice }}</span>
+                </div>
+                
+                <div style="display: flex; justify-content: center; gap: 40px; margin-top: 30px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Коэффициент поддержки:</div>
+                        <div style="font-size: 18px; font-weight: 600;">{{ .model.SupportCoeff }}</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Коэффициент скидки:</div>
+                        <div style="font-size: 18px; font-weight: 600;">{{ .model.DiscountCoeff }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
