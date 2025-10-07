@@ -75,19 +75,6 @@ services:
       - minio3
       - minio4
 
-  # Go приложение
-  web-app:
-    build: .
-    hostname: web-app
-    ports:
-      - "8080:8080"
-    depends_on:
-      - nginx
-      - minio1
-      - minio2
-      - minio3
-      - minio4
-
 ## По умолчанию в этой конфигурации используется локальный драйвер docker по умолчанию,
 ## Для пользовательских томов замените на конфигурацию драйвера тома.
 volumes:

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>{{ .model.Name }} - Детали лицензии</title>
+    <title>{{ if .model }}{{ .model.Name }} - Детали лицензии{{ else }}{{ .request.CompanyName }} - Заявка #{{ .request.ID }}{{ end }}</title>
     <link rel="stylesheet" href="/static/styles/license_models.css">
 </head>
 <body>
@@ -14,6 +14,8 @@
     </div>
 
     <main class="container model-detail-wrap">
+        <!-- Если показываем детали модели -->
+        {{ if .model }}
         <div class="model-detail-card">
             <div class="model-icon-large">
                 <img src="http://localhost:9000/img/{{ .model.Icon }}" alt="{{ .model.Name }}" class="model-detail-image">
@@ -23,7 +25,7 @@
                 <h1 class="model-detail-title">{{ .model.Name }}</h1>
                 <div class="model-detail-desc">{{ .model.Description }}</div>
                 <div class="model-detail-price">
-                    <span>Цена (тыс. руб.): {{ .model.BasePrice }}</span>
+                    <span>Цена (тыс. руб.): {{ printf "%.0f" .model.BasePrice }}</span>
                 </div>
                 
                 <div style="display: flex; justify-content: center; gap: 40px; margin-top: 30px;">
@@ -38,6 +40,39 @@
                 </div>
             </div>
         </div>
+        {{ end }}
+
+        <!-- Если показываем заявку -->
+        {{ if .request }}
+        <div class="model-detail-card">
+            <div class="model-detail-content">
+                <h1 class="model-detail-title">Заявка #{{ .request.ID }}</h1>
+                <div class="model-detail-desc">{{ .request.CompanyName }}</div>
+                
+                <div style="margin-top: 20px;">
+                    <div><strong>Дата заявки:</strong> {{ .request.RequestDate }}</div>
+                    <div><strong>Пользователи:</strong> {{ .request.UserCount }}</div>
+                    <div><strong>Ядра:</strong> {{ .request.CoreCount }}</div>
+                    <div><strong>Период:</strong> {{ .request.LicensePeriodYears }} лет</div>
+                    <div><strong>Поддержка:</strong> {{ .request.SupportLevel }}</div>
+                </div>
+                
+                <div class="model-detail-price" style="margin-top: 30px;">
+                    <span><strong>Итоговая стоимость: {{ printf "%.0f" .request.TotalCost }} руб.</strong></span>
+                </div>
+            </div>
+        </div>
+        {{ end }}
+
+        <!-- Если ошибка -->
+        {{ if .error }}
+        <div class="model-detail-card">
+            <div class="model-detail-content">
+                <h1 class="model-detail-title">Ошибка</h1>
+                <div class="model-detail-desc">{{ .error }}</div>
+            </div>
+        </div>
+        {{ end }}
     </main>
 </body>
 </html>

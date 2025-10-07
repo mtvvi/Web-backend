@@ -19,55 +19,80 @@
         
         <div class="form-section">
             <div class="form-row">
-                <label>Количество пользователей</label>
-                <input type="number" id="users" value="50" class="form-input">
+                <label>Название компании</label>
+                <input type="text" id="company" value="{{ .request.CompanyName }}" class="form-input">
             </div>
             <div class="form-row">
-                <label>Количество серверов</label>
-                <input type="number" id="servers" value="15" class="form-input">
+                <label>Количество пользователей</label>
+                <input type="number" id="users" value="{{ .request.UserCount }}" class="form-input">
             </div>
+
             <div class="form-row">
                 <label>Общее количество ядер</label>
-                <input type="number" id="cores" value="128" class="form-input">
+                <input type="number" id="cores" value="{{ .request.CoreCount }}" class="form-input">
             </div>
             <div class="form-row">
                 <label>Период лицензии (лет)</label>
-                <input type="number" id="period" value="5" class="form-input">
+                <input type="number" id="period" value="{{ .request.LicensePeriodYears }}" class="form-input">
             </div>
+
             <div class="form-row">
-                <label>Объем данных (ТБ)</label>
-                <input type="number" id="data" value="8192" class="form-input">
+                <label>Уровень поддержки</label>
+                <select id="support" class="form-input">
+                    <option value="basic" {{ if eq .request.SupportLevel "basic" }}selected{{ end }}>Базовый</option>
+                    <option value="standard" {{ if eq .request.SupportLevel "standard" }}selected{{ end }}>Стандартный</option>
+                    <option value="premium" {{ if eq .request.SupportLevel "premium" }}selected{{ end }}>Премиум</option>
+                </select>
             </div>
         </div>
 
+        <!-- Заголовок таблицы -->
+        <div class="license-table-header">
+            <div class="header-model">Модель лицензирования</div>
+            <div class="header-price">Цена за единицу (руб.)</div>
+            <div class="header-support">Коэф. поддержки</div>
+            <div class="header-discount">Коэф. скидки</div>
+            <div class="header-total">Итого (руб.)</div>
+        </div>
+
         <section class="cart-list">
-            {{ range .models }}
+            {{ range $index, $licenseParam := .request.LicenseParameters }}
+            {{ $model := index $.models $index }}
             <article class="cart-item">
-                <img src="http://localhost:9000/img/{{ .Icon }}" alt="{{ .Name }}" class="license-image">
-                <div class="license-info">
-                    <div class="building-name">{{ .Name }}</div>
-                    <div class="building-desc">{{ .Description }}</div>
-                </div>
-                <div class="price-info">
-                    <div class="price-label">Цена за единицу</div>
-                    <div class="price-value">{{ .BasePrice }}</div>
-                </div>
-                <div class="coefficient-inputs">
-                    <div class="coeff-group">
-                        <span>Коэф. поддержки:</span>
-                        <input type="number" step="0.01" value="{{ .SupportCoeff }}" class="coeff-input">
-                    </div>
-                    <div class="coeff-group">
-                        <span>Коэф. скидки:</span>
-                        <input type="number" step="0.01" value="{{ .DiscountCoeff }}" class="coeff-input">
+                <div class="license-model-cell">
+                    <img src="http://localhost:9000/img/{{ $model.Icon }}" alt="{{ $model.Name }}" class="license-image">
+                    <div class="license-info">
+                        <div class="license-name">{{ $model.Name }}</div>
+                        <div class="license-desc">{{ $model.Description }}</div>
                     </div>
                 </div>
-                <div class="price-result">
-                    <span class="final-price">531600 руб</span>
+                
+                <div class="price-cell">
+                    <span class="price-value">{{ printf "%.0f" $model.BasePrice }}</span>
+                </div>
+                
+                <div class="support-cell">
+                    <span class="coeff-value">{{ printf "%.2f" $licenseParam.SupportCoeff }}</span>
+                </div>
+                
+                <div class="discount-cell">
+                    <span class="coeff-value">{{ printf "%.2f" $licenseParam.AppliedDiscount }}</span>
+                </div>
+                
+                <div class="total-cell">
+                    <span class="final-price">{{ printf "%.0f" $licenseParam.CalculatedCost }}</span>
                 </div>
             </article>
             {{ end }}
         </section>
+
+        <!-- Итоговые расчеты (упрощенно) -->
+        <div class="cost-summary">
+            <div class="summary-row total-row">
+                <span class="summary-label"><strong>ИТОГОВАЯ СТОИМОСТЬ:</strong></span>
+                <span class="summary-value"><strong>{{ printf "%.0f" .request.TotalCost }} руб.</strong></span>
+            </div>
+        </div>
     </main>
 
 </body>

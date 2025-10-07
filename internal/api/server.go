@@ -29,6 +29,7 @@ func StartServer() {
 	r.GET("/model/:id", handler.GetLicenseModelDetail)
 	r.GET("/license-models", handler.GetLicenseModels)
 	r.GET("/license-calculator", handler.GetLicenseCalculator)
+	r.GET("/request/:id", handler.GetLicenseRequestByID) // Получение заявки по ID
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")
