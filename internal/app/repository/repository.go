@@ -3,13 +3,24 @@ package repository
 import (
 	"fmt"
 	"strings"
+
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type Repository struct {
+	db *gorm.DB
 }
 
-func NewRepository() (*Repository, error) {
-	return &Repository{}, nil
+func New(dsn string) (*Repository, error) {
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	return &Repository{
+		db: db,
+	}, nil
 }
 
 type LicenseModel struct {
@@ -39,45 +50,40 @@ type LicenseRequest struct {
 
 // Связующая структура для связи многие-ко-многим (Поля м-м)
 type LicenseToRequest struct {
-	LicenseModelId   int     // ID модели лицензирования
-	RequiredQuantity int     // Требуемое количество (вводится пользователем)
-	CalculatedCost   float64 // Рассчитанная стоимость (результат расчета)
-	AppliedDiscount  float64 // Примененная скидка (результат расчета)
-	SupportCoeff     float64 // Коэффициент поддержки (результат расчета)
+	LicenseModelId     int     // ID модели лицензирования
+	RequiredQuantity   int     // Требуемое количество (вводится пользователем)
+	CalculatedCost     float64 // Рассчитанная стоимость (результат расчета)
+	BaseCalculatedCost float64 // Цена до применения скидки
+	AppliedDiscount    float64 // Примененная скидка (результат расчета)
+	SupportCoeff       float64 // Коэффициент поддержки (остается как есть)
 }
 
 func (r *Repository) GetLicenseModels() ([]LicenseModel, error) {
-	models := []LicenseModel{
-		{
-			ID:            1,
-			Name:          "Пользовательские лицензии",
-			Description:   "Лицензирование по количеству пользователей. При заказе >100 пользователей скидка 15%. При поддержке 'premium' +30%",
-			Icon:          "user.png",
-			BasePrice:     25000.0, // руб. за пользователя в год
-			SupportCoeff:  1.3,     // Премиум поддержка +30%
-			DiscountCoeff: 0.85,    // Скидка при >100 пользователей
-			PricingType:   "per_user",
-		},
-		{
-			ID:            2,
-			Name:          "Серверные лицензии",
-			Description:   "Лицензирование по количеству процессорных ядер. При заказе >50 ядер действует скидка 20%. При поддержке 'standard'/'premium' +25%",
-			Icon:          "core.png",
-			BasePrice:     150000.0, // руб. за ядро в год
-			SupportCoeff:  1.25,     // Техподдержка +25%
-			DiscountCoeff: 0.80,     // Скидка при >50 ядер
-			PricingType:   "per_core",
-		},
-		{
-			ID:            3,
-			Name:          "Корпоративная подписка",
-			Description:   "Безлимитная подписка с включенной поддержкой. При заключении контракта >2 лет действует скидка 10%",
-			Icon:          "subscription.png",
-			BasePrice:     2500000.0, // руб. в год
-			SupportCoeff:  1.0,       // Поддержка уже включена
-			DiscountCoeff: 0.90,      // Скидка при многолетних контрактах
-			PricingType:   "subscription",
-		},
+	// Получаем данные из БД через новые методы
+	services, err := r.GetAllServices()
+	if err != nil {
+		return []LicenseModel{}, err
+	}
+
+	// Преобразуем в старый формат для совместимости с шаблонами
+	models := make([]LicenseModel, len(services))
+	for i, service := range services {
+		// Используем ImageURL из базы или дефолтную картинку если нет
+		iconName := "rectangle-2-6.png" // дефолт
+		if service.ImageURL != nil && *service.ImageURL != "" {
+			iconName = *service.ImageURL
+		}
+
+		models[i] = LicenseModel{
+			ID:            int(service.ID),
+			Name:          service.Name,
+			Description:   service.Description,
+			Icon:          iconName,
+			BasePrice:     service.BasePrice,
+			SupportCoeff:  0, // Динамические коэффициенты рассчитываются в калькуляторе
+			DiscountCoeff: 0,
+			PricingType:   "per_unit",
+		}
 	}
 
 	return models, nil
@@ -118,11 +124,6 @@ func (r *Repository) GetCartModels() ([]LicenseModel, error) {
 	return cartModels, nil
 }
 
-func (r *Repository) GetCartCount() int {
-	// Возвращаем количество товаров в заявке
-	return 2
-}
-
 func (r *Repository) GetLicenseModelByID(id int) (LicenseModel, error) {
 	// Получаем все лицензионные модели
 	models, err := r.GetLicenseModels()
@@ -154,7 +155,7 @@ func (r *Repository) GetDefaultLicenseRequest() *LicenseRequest {
 		TotalCost:          0,
 	}
 
-	// Поля м-м (аналог PlanetsParametrs в примере с планетами)
+	// Поля м-м
 	request.LicenseParameters = []LicenseToRequest{
 		{
 			LicenseModelId:   1,                 // Пользовательские лицензии
@@ -285,49 +286,27 @@ func (r *Repository) CalculateLicenseCost(request *LicenseRequest) (*LicenseRequ
 	return request, nil
 }
 
-// Получить заявку по ID
-func (r *Repository) GetLicenseRequestByID(id int) (*LicenseRequest, error) {
-	// В реальном приложении здесь был бы запрос к БД
-	// Пока возвращаем дефолтную заявку с расчетами
-	request := r.GetDefaultLicenseRequest()
-	request.ID = id
+func (r *Repository) GetCartCount() int {
+	// Используем тестового пользователя ID=1 для демонстрации
+	userID := uint(1)
 
-	// Выполняем расчет
-	calculatedRequest, err := r.CalculateLicenseCost(request)
-	if err != nil {
-		return nil, err
-	}
-
-	return calculatedRequest, nil
-}
-
-// Получить лицензии для заявки (аналог GetResearchPlanets)
-func (r *Repository) GetRequestLicenses(requestId int) []LicenseModel {
-	request, err := r.GetLicenseRequestByID(requestId)
-	if err != nil {
-		return []LicenseModel{}
-	}
-
-	var licensesInRequest []LicenseModel
-	for _, licenseParam := range request.LicenseParameters {
-		license, err := r.GetLicenseModelByID(licenseParam.LicenseModelId)
-		if err == nil {
-			licensesInRequest = append(licensesInRequest, license)
-		}
-	}
-	return licensesInRequest
-}
-
-// Получить количество лицензий в заявке (аналог GetResearchCount)
-func (r *Repository) GetRequestLicenseCount(requestId int) int {
-	request, err := r.GetLicenseRequestByID(requestId)
+	// Получаем заявку в статусе черновик
+	order, err := r.GetOrCreateDraftOrder(userID)
 	if err != nil {
 		return 0
 	}
-	return len(request.LicenseParameters)
-}
 
-// Получить ID текущей заявки (аналог GetResearchId)
-func (r *Repository) GetCurrentRequestId() int {
-	return 1
+	// Считаем количество услуг в заявке
+	orderServices, err := r.GetOrderServices(order.ID)
+	if err != nil {
+		return 0
+	}
+
+	// Возвращаем общее количество товаров (сумма количества всех услуг)
+	totalCount := 0
+	for _, service := range orderServices {
+		totalCount += service.Quantity
+	}
+
+	return totalCount
 }

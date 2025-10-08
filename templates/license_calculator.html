@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Калькулятор лицензирования</title>
+    <title>Расчет стоимости лицензирования</title>
     <link rel="stylesheet" href="/static/styles/license_models.css">
 </head>
 <body>
@@ -17,36 +17,41 @@
     <main class="container calculator-wrap">
         <h1 class="calculator-title">Моя заявка на расчет стоимости лицензирования</h1>
         
-        <div class="form-section">
-            <div class="form-row">
-                <label>Название компании</label>
-                <input type="text" id="company" value="{{ .request.CompanyName }}" class="form-input">
-            </div>
-            <div class="form-row">
-                <label>Количество пользователей</label>
-                <input type="number" id="users" value="{{ .request.UserCount }}" class="form-input">
-            </div>
-
-            <div class="form-row">
-                <label>Общее количество ядер</label>
-                <input type="number" id="cores" value="{{ .request.CoreCount }}" class="form-input">
-            </div>
-            <div class="form-row">
-                <label>Период лицензии (лет)</label>
-                <input type="number" id="period" value="{{ .request.LicensePeriodYears }}" class="form-input">
-            </div>
-
-            <div class="form-row">
-                <label>Уровень поддержки</label>
-                <select id="support" class="form-input">
-                    <option value="basic" {{ if eq .request.SupportLevel "basic" }}selected{{ end }}>Базовый</option>
-                    <option value="standard" {{ if eq .request.SupportLevel "standard" }}selected{{ end }}>Стандартный</option>
-                    <option value="premium" {{ if eq .request.SupportLevel "premium" }}selected{{ end }}>Премиум</option>
-                </select>
-            </div>
+        {{ if .savedMessage }}
+        <div style="background: #d4edda; color: #155724; padding: 12px; border-radius: 6px; margin-bottom: 20px; text-align: center;">
+            Расчет успешно сохранен! Статус заявки изменен на "сформирован".
         </div>
+        {{ end }}
+        
+                <form action="/license-calculator" method="GET" class="calculator-form">
+                    <div class="form-group">
+                        <label>Название компании:</label>
+                        <input type="text" name="company" placeholder="ООО &quot;Пример&quot;" value="{{.request.CompanyName}}">
+                    </div>
+                    <div class="form-group">
+                        <label>Количество пользователей:</label>
+                        <input type="number" name="users" min="1" value="{{.request.UserCount}}" onchange="this.form.submit();">
+                    </div>
+                    <div class="form-group">
+                        <label>Количество CPU ядер:</label>
+                        <input type="number" name="cores" min="1" value="{{.request.CoreCount}}" onchange="this.form.submit();">
+                    </div>
+                    <div class="form-group">
+                        <label>Период лицензии (лет):</label>
+                        <select name="period" onchange="this.form.submit();">
+                            <option value="1" {{if or (eq .request.LicensePeriodYears 1) (eq .request.LicensePeriodYears 0)}}selected{{end}}>1 год</option>
+                            <option value="2" {{if eq .request.LicensePeriodYears 2}}selected{{end}}>2 года</option>
+                            <option value="3" {{if eq .request.LicensePeriodYears 3}}selected{{end}}>3 года</option>
+                        </select>
+                    </div>
 
-        <!-- Заголовок таблицы -->
+                    <!-- Сохраняем настройки поддержки каждого товара -->
+                    {{ range $index, $licenseParam := .request.LicenseParameters }}
+                    <input type="hidden" name="item_support_{{ $index }}" value="{{ $licenseParam.SupportCoeff }}">
+                    {{ end }}
+
+                    <button type="submit" class="calculate-btn">Пересчитать</button>
+                </form>        <!-- Заголовок таблицы -->
         <div class="license-table-header">
             <div class="header-model">Модель лицензирования</div>
             <div class="header-price">Цена за единицу (руб.)</div>
@@ -68,11 +73,36 @@
                 </div>
                 
                 <div class="price-cell">
-                    <span class="price-value">{{ printf "%.0f" $model.BasePrice }}</span>
+                    <span class="price-value">{{ printf "%.0f" $licenseParam.BaseCalculatedCost }}</span>
                 </div>
                 
                 <div class="support-cell">
-                    <span class="coeff-value">{{ printf "%.2f" $licenseParam.SupportCoeff }}</span>
+                    {{ if eq $model.Name "Корпоративная подписка" }}
+                        <!-- Для корпоративной подписки поддержка всегда премиум -->
+                        <span class="coeff-value">Премиум</span>
+                        <input type="hidden" name="item_support_{{ $index }}" value="1.5">
+                    {{ else }}
+                        <!-- Для остальных товаров - выбираемая поддержка -->
+                        <form action="/license-calculator" method="GET" style="display: inline;">
+                            <!-- Сохраняем все основные параметры -->
+                            <input type="hidden" name="company" value="{{$.request.CompanyName}}">
+                            <input type="hidden" name="users" value="{{$.request.UserCount}}">
+                            <input type="hidden" name="cores" value="{{$.request.CoreCount}}">
+                            <input type="hidden" name="period" value="{{$.request.LicensePeriodYears}}">
+                            <input type="hidden" name="support" value="{{$.request.SupportLevel}}">
+                            <!-- Сохраняем поддержку других товаров -->
+                            {{ range $i, $param := $.request.LicenseParameters }}
+                            {{ if ne $i $index }}
+                            <input type="hidden" name="item_support_{{ $i }}" value="{{ $param.SupportCoeff }}">
+                            {{ end }}
+                            {{ end }}
+                            <select name="item_support_{{ $index }}" onchange="this.form.submit();">
+                                <option value="1.0" {{if eq $licenseParam.SupportCoeff 1.0}}selected{{end}}>Базовый</option>
+                                <option value="1.25" {{if eq $licenseParam.SupportCoeff 1.25}}selected{{end}}>Стандартный</option>
+                                <option value="1.5" {{if eq $licenseParam.SupportCoeff 1.5}}selected{{end}}>Премиум</option>
+                            </select>
+                        </form>
+                    {{ end }}
                 </div>
                 
                 <div class="discount-cell">
@@ -86,14 +116,27 @@
             {{ end }}
         </section>
 
-        <!-- Итоговые расчеты (упрощенно) -->
+        <!-- Итоговые расчеты и кнопки действий -->
         <div class="cost-summary">
             <div class="summary-row total-row">
                 <span class="summary-label"><strong>ИТОГОВАЯ СТОИМОСТЬ:</strong></span>
                 <span class="summary-value"><strong>{{ printf "%.0f" .request.TotalCost }} руб.</strong></span>
             </div>
+            
+            <!-- Кнопки управления заявкой (как в RIP-25-26) -->
+            <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px;">
+                <form action="/request/{{ .request.ID }}/delete" method="post" style="display: inline;">
+                    <button type="submit" class="delete-btn" 
+                            style="background: #dc3545; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer;"
+                            onclick="return confirm('Вы уверены, что хотите удалить эту заявку?')">
+                        Удалить заявку
+                    </button>
+                </form>
+            </div>
         </div>
     </main>
+
+
 
 </body>
 </html>

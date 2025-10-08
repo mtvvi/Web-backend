@@ -1,35 +1,40 @@
 package api
 
 import (
+	"backend/internal/app/dsn"
 	"backend/internal/app/handler"
 	"backend/internal/app/repository"
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 )
 
 func StartServer() {
 	log.Println("Starting server")
 
-	repo, err := repository.NewRepository()
+	// Загружаем переменные окружения
+	err := godotenv.Load()
 	if err != nil {
-		logrus.Error("ошибка инициализации репозитория")
+		logrus.Error("Ошибка загрузки .env файла")
+	}
+
+	// Подключаемся к базе данных
+	dsnStr := dsn.FromEnv()
+	repo, err := repository.New(dsnStr)
+	if err != nil {
+		logrus.Error("ошибка инициализации репозитория: ", err)
+		return
 	}
 
 	handler := handler.NewHandler(repo)
 
 	r := gin.Default()
-	// добавляем наш html/шаблон
-	r.LoadHTMLGlob("templates/*")
-	r.Static("/static", "./resources")
-	// слева название папки, в которую выгрузится наша статика
-	// справа путь к папке, в которой лежит статика
 
-	r.GET("/model/:id", handler.GetLicenseModelDetail)
-	r.GET("/license-models", handler.GetLicenseModels)
-	r.GET("/license-calculator", handler.GetLicenseCalculator)
-	r.GET("/request/:id", handler.GetLicenseRequestByID) // Получение заявки по ID
+	// Регистрируем статические файлы и маршруты через Handler (как в RIP-25-26)
+	handler.RegisterStatic(r)
+	handler.RegisterRoutes(r)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 	log.Println("Server down")

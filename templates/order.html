@@ -25,17 +25,17 @@
                 <h1 class="model-detail-title">{{ .model.Name }}</h1>
                 <div class="model-detail-desc">{{ .model.Description }}</div>
                 <div class="model-detail-price">
-                    <span>Цена (тыс. руб.): {{ printf "%.0f" .model.BasePrice }}</span>
+                    <span>Базовая цена: {{ printf "%.0f" .model.BasePrice }} руб.</span>
                 </div>
                 
-                <div style="display: flex; justify-content: center; gap: 40px; margin-top: 30px;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Коэффициент поддержки:</div>
-                        <div style="font-size: 18px; font-weight: 600;">{{ .model.SupportCoeff }}</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Коэффициент скидки:</div>
-                        <div style="font-size: 18px; font-weight: 600;">{{ .model.DiscountCoeff }}</div>
+                <div style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                    <div style="font-size: 16px; color: #555; text-align: center; line-height: 1.6;">
+                        <strong>Точная стоимость рассчитывается индивидуально</strong><br>
+                        в зависимости от количества пользователей, ядер,<br>
+                        периода лицензии и выбранного уровня поддержки.<br><br>
+                        <a href="/license-calculator" style="color: #007bff; text-decoration: none; font-weight: 600;">
+                            → Перейти к калькулятору для расчета
+                        </a>
                     </div>
                 </div>
             </div>

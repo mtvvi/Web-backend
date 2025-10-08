@@ -2,8 +2,6 @@ package handler
 
 import (
 	"backend/internal/app/repository"
-	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -19,109 +17,27 @@ func NewHandler(r *repository.Repository) *Handler {
 	}
 }
 
-func (h *Handler) GetLicenseModelDetail(ctx *gin.Context) {
-	idStr := ctx.Param("id")       // получаем id лицензионной модели из урла (то есть из /model/:id)
-	id, err := strconv.Atoi(idStr) // преобразуем строку в int
-	if err != nil {
-		logrus.Error(err)
-		ctx.HTML(http.StatusBadRequest, "order.html", gin.H{"error": "Invalid model ID"})
-		return
-	}
+// Регистрация маршрутов (строго по требованию: 3 GET + 2 POST)
+func (h *Handler) RegisterRoutes(router *gin.Engine) {
+	// 3 GET маршрута
+	router.GET("/model/:id", h.GetLicenseModelDetail)         // 1. Просмотр отдельной услуги
+	router.GET("/license-models", h.GetLicenseModels)         // 2. Получение и поиск услуг
+	router.GET("/license-calculator", h.GetLicenseCalculator) // 3. Просмотр текущей заявки
 
-	model, err := h.Repository.GetLicenseModelByID(id)
-	if err != nil {
-		logrus.Error(err)
-		ctx.HTML(http.StatusNotFound, "order.html", gin.H{"error": "Model not found"})
-		return
-	}
-
-	ctx.HTML(http.StatusOK, "order.html", gin.H{
-		"model":     model,
-		"cartCount": h.Repository.GetCartCount(),
-	})
+	// 2 POST маршрута
+	router.POST("/model/:id/add-to-cart", h.AddModelToCart)    // 1. Добавление услуги в заявку (ORM)
+	router.POST("/request/:id/delete", h.DeleteLicenseRequest) // 2. Логическое удаление заявки (SQL)
+} // Регистрация статических файлов
+func (h *Handler) RegisterStatic(router *gin.Engine) {
+	router.LoadHTMLGlob("templates/*")
+	router.Static("/static", "./resources")
 }
 
-func (h *Handler) GetLicenseModels(ctx *gin.Context) {
-	var models []repository.LicenseModel
-	var err error
-
-	searchQuery := ctx.Query("query")               // получаем значение из поля поиска
-	logrus.Infof("Search query: '%s'", searchQuery) // добавляем отладочную информацию
-
-	if searchQuery == "" { // если поле поиска пусто, то просто получаем из репозитория все записи
-		models, err = h.Repository.GetLicenseModels()
-		if err != nil {
-			logrus.Error(err)
-		}
-		logrus.Infof("Found %d models (no search)", len(models))
-	} else {
-		models, err = h.Repository.GetLicenseModelsByName(searchQuery) // в ином случае ищем модель по названию
-		if err != nil {
-			logrus.Error(err)
-		}
-		logrus.Infof("Found %d models for search '%s'", len(models), searchQuery)
-	}
-
-	cartCount := h.Repository.GetCartCount()
-
-	ctx.HTML(http.StatusOK, "license_models.html", gin.H{
-		"models":    models,
-		"query":     searchQuery, // передаем введенный запрос обратно на страницу
-		"cartCount": cartCount,
-	})
-}
-
-func (h *Handler) GetLicenseCalculator(ctx *gin.Context) {
-	// Получаем дефолтную заявку с расчетами
-	request := h.Repository.GetDefaultLicenseRequest()
-	calculatedRequest, err := h.Repository.CalculateLicenseCost(request)
-	if err != nil {
-		logrus.Error(err)
-		ctx.HTML(http.StatusInternalServerError, "license_calculator.html", gin.H{"error": "Failed to calculate license cost"})
-		return
-	}
-
-	// Получаем модели для отображения из связей многие-ко-многим (Поля м-м)
-	selectedModels := make([]repository.LicenseModel, 0)
-	allModels, _ := h.Repository.GetLicenseModels()
-
-	for _, licenseParam := range calculatedRequest.LicenseParameters {
-		for _, model := range allModels {
-			if model.ID == licenseParam.LicenseModelId {
-				selectedModels = append(selectedModels, model)
-				break
-			}
-		}
-	}
-
-	cartCount := h.Repository.GetCartCount()
-
-	ctx.HTML(http.StatusOK, "license_calculator.html", gin.H{
-		"request":   calculatedRequest,
-		"models":    selectedModels,
-		"cartCount": cartCount,
-	})
-}
-
-// Получение заявки по ID (показываем HTML страницу)
-func (h *Handler) GetLicenseRequestByID(ctx *gin.Context) {
-	idStr := ctx.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		logrus.Error(err)
-		ctx.HTML(http.StatusBadRequest, "order.html", gin.H{"error": "Invalid request ID"})
-		return
-	}
-
-	request, err := h.Repository.GetLicenseRequestByID(id)
-	if err != nil {
-		logrus.Error(err)
-		ctx.HTML(http.StatusNotFound, "order.html", gin.H{"error": "License request not found"})
-		return
-	}
-
-	ctx.HTML(http.StatusOK, "order.html", gin.H{
-		"request":   request,
-		"cartCount": h.Repository.GetCartCount(),
+// Централизованная обработка ошибок (как в RIP-25-26)
+func (h *Handler) errorHandler(ctx *gin.Context, errorStatusCode int, err error) {
+	logrus.Error(err.Error())
+	ctx.JSON(errorStatusCode, gin.H{
+		"status":      "error",
+		"description": err.Error(),
 	})
 }

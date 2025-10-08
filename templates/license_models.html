@@ -37,7 +37,16 @@
                 </div>
                 <div class="card-title">{{ .Name }}</div>
                 <div class="card-desc">{{ .Description }}</div>
+                
                 <a href="/model/{{ .ID }}" class="card-btn">Подробнее</a>
+                
+                <!-- Кнопка добавления в корзину (как в RIP-25-26) -->
+                <form action="/model/{{ .ID }}/add-to-cart" method="post">
+                    <button type="submit" class="card-btn add-cart-btn" 
+                            style="background: #28a745; border: none; cursor: pointer; right: 12px; left: auto; color: white; width: 162px;">
+                        🛒
+                    </button>
+                </form>
             </div>
             {{ end }}
         </div>

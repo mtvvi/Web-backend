@@ -77,6 +77,26 @@ services:
 
 ## По умолчанию в этой конфигурации используется локальный драйвер docker по умолчанию,
 ## Для пользовательских томов замените на конфигурацию драйвера тома.
+  # PostgreSQL база данных
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: license_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Adminer для управления БД
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8081:8080"
+    depends_on:
+      - postgres
+
 volumes:
   data1-1:
   data1-2:
@@ -86,3 +106,4 @@ volumes:
   data3-2:
   data4-1:
   data4-2:
+  postgres_data:
