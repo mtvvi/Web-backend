@@ -2,9 +2,133 @@ package repository
 
 import (
 	"backend/internal/app/ds"
+	"database/sql"
+	"errors"
 )
 
-// Методы для М-М связей (ORM)
+// Простая структура услуги для отображения
+type LicenseService struct {
+	ID          uint
+	Name        string
+	Description string
+	ImageURL    string
+	BasePrice   float64
+	LicenseType string // per_user, per_core, subscription
+}
+
+// Структура услуги в заявке (с данными из М-М таблицы)
+type ServiceInOrder struct {
+	OrderServiceID uint // ID записи в order_services
+	ID             uint
+	Name           string
+	Description    string
+	ImageURL       string
+	BasePrice      float64
+	LicenseType    string
+	Users          int     // из таблицы order_services
+	Cores          int     // из таблицы order_services
+	Period         int     // из таблицы order_services
+	SupportLevel   float64 // из таблицы order_services
+	SubTotal       float64 // из таблицы order_services
+}
+
+// Методы для работы с услугами
+
+// Получить все услуги из БД
+func (r *Repository) GetAllServices() ([]LicenseService, error) {
+	var dbServices []ds.LicenseService
+	err := r.db.Where("is_deleted = ?", false).Find(&dbServices).Error
+	if err != nil {
+		return nil, err
+	}
+
+	services := make([]LicenseService, len(dbServices))
+	for i, s := range dbServices {
+		imageURL := "rectangle-2-6.png"
+		if s.ImageURL != nil && *s.ImageURL != "" {
+			imageURL = *s.ImageURL
+		}
+		services[i] = LicenseService{
+			ID:          s.ID,
+			Name:        s.Name,
+			Description: s.Description,
+			ImageURL:    imageURL,
+			BasePrice:   s.BasePrice,
+			LicenseType: s.LicenseType,
+		}
+	}
+	return services, nil
+}
+
+// Получить услугу по ID
+func (r *Repository) GetServiceByID(id uint) (*LicenseService, error) {
+	// Используем курсор
+	query := `SELECT id, name, description, image_url, base_price, license_type 
+	          FROM license_services 
+	          WHERE id = $1 AND is_deleted = false`
+
+	// Создание курсора (строковый указатель)
+	row := r.db.Raw(query, id).Row()
+
+	// Создание объекта для хранения данных
+	var dbID uint
+	var name, description, licenseType string
+	var imageURLPtr *string
+	var basePrice float64
+
+	// Сканирование строки из курсора в переменные
+	err := row.Scan(&dbID, &name, &description, &imageURLPtr, &basePrice, &licenseType)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // Возвращаем nil, если записи нет
+		}
+		return nil, err
+	}
+
+	// Обработка NULL значения для image_url
+	imageURL := "rectangle-2-6.png"
+	if imageURLPtr != nil && *imageURLPtr != "" {
+		imageURL = *imageURLPtr
+	}
+
+	service := &LicenseService{
+		ID:          dbID,
+		Name:        name,
+		Description: description,
+		ImageURL:    imageURL,
+		BasePrice:   basePrice,
+		LicenseType: licenseType,
+	}
+	return service, nil
+}
+
+// Поиск услуг по имени
+func (r *Repository) SearchServicesByName(name string) ([]LicenseService, error) {
+	var dbServices []ds.LicenseService
+	err := r.db.Where("name ILIKE ? AND is_deleted = ?", "%"+name+"%", false).Find(&dbServices).Error
+	if err != nil {
+		return nil, err
+	}
+
+	services := make([]LicenseService, len(dbServices))
+	for i, s := range dbServices {
+		imageURL := "rectangle-2-6.png"
+		if s.ImageURL != nil && *s.ImageURL != "" {
+			imageURL = *s.ImageURL
+		}
+		services[i] = LicenseService{
+			ID:          s.ID,
+			Name:        s.Name,
+			Description: s.Description,
+			ImageURL:    imageURL,
+			BasePrice:   s.BasePrice,
+			LicenseType: s.LicenseType,
+		}
+	}
+	return services, nil
+}
+
+// Методы для М-М связей (работа с услугами в заявке)
 
 func (r *Repository) AddServiceToOrder(orderID, serviceID uint, users, cores, period int) error {
 	// Получаем цену услуги
@@ -36,7 +160,7 @@ func (r *Repository) AddServiceToOrder(orderID, serviceID uint, users, cores, pe
 		}
 	}
 
-	// Всегда создаем новую запись (не проверяем дубликаты)
+	// Всегда создаем новую запись
 	orderService := ds.OrderService{
 		OrderID:      orderID,
 		ServiceID:    serviceID,

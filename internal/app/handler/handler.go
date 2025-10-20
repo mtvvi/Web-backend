@@ -2,14 +2,12 @@ package handler
 
 import (
 	"backend/internal/app/repository"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 type Handler struct {
