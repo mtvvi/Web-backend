@@ -48,7 +48,7 @@ func (r *Repository) CreateDraftOrder(userID uint) (*ds.LicenseOrder, error) {
 		CreatorID: userID,
 		Users:     0,
 		Cores:     0,
-		Period:    1,
+		Period:    0,
 	}
 
 	err := r.db.Create(&order).Error

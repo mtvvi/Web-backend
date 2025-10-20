@@ -209,12 +209,12 @@ func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 	}
 
 	// Получаем параметры из формы
-	users := 1
-	cores := 1
-	period := 1
+	users := 0
+	cores := 0
+	period := 0
 
 	if u := ctx.PostForm("users"); u != "" {
-		if val, err := strconv.Atoi(u); err == nil && val > 0 {
+		if val, err := strconv.Atoi(u); err == nil && val >= 0 {
 			users = val
 		}
 	}
@@ -224,7 +224,7 @@ func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 		}
 	}
 	if p := ctx.PostForm("period"); p != "" {
-		if val, err := strconv.Atoi(p); err == nil && val > 0 {
+		if val, err := strconv.Atoi(p); err == nil && val >= 0 {
 			period = val
 		}
 	}

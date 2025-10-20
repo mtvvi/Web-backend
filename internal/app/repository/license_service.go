@@ -132,12 +132,12 @@ func (r *Repository) AddServiceToOrder(orderID, serviceID uint) error {
 	// Проверяем, не добавлена ли уже эта услуга
 	var existing ds.OrderService
 	err := r.db.Where("order_id = ? AND service_id = ?", orderID, serviceID).First(&existing).Error
-	
+
 	if err == nil {
 		// Услуга уже есть в заявке - просто игнорируем (не ошибка)
 		return nil
 	}
-	
+
 	// Услуги нет - добавляем
 	orderService := ds.OrderService{
 		OrderID:      orderID,
