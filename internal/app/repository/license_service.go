@@ -16,20 +16,16 @@ type LicenseService struct {
 	LicenseType string // per_user, per_core, subscription
 }
 
-// Структура услуги в заявке (с данными из М-М таблицы)
+// Структура услуги в заявке (данные из license_services + расчет на лету)
 type ServiceInOrder struct {
-	OrderServiceID uint // ID записи в order_services
-	ID             uint
-	Name           string
-	Description    string
-	ImageURL       string
-	BasePrice      float64
-	LicenseType    string
-	Users          int     // из таблицы order_services
-	Cores          int     // из таблицы order_services
-	Period         int     // из таблицы order_services
-	SupportLevel   float64 // из таблицы order_services
-	SubTotal       float64 // из таблицы order_services
+	ID          uint
+	Name        string
+	Description string
+	ImageURL    string
+	BasePrice   float64
+	LicenseType string
+	// Расчетные поля (вычисляются на лету из LicenseOrder)
+	SubTotal float64 // BasePrice × quantity × SupportLevel
 }
 
 // Методы для работы с услугами
@@ -128,89 +124,18 @@ func (r *Repository) SearchServicesByName(name string) ([]LicenseService, error)
 	return services, nil
 }
 
-// Методы для М-М связей (работа с услугами в заявке)
+// Методы для М-М связей (простая связь услуг с заявкой)
 
-func (r *Repository) AddServiceToOrder(orderID, serviceID uint, users, cores, period int) error {
-	// Получаем цену услуги
-	service, err := r.GetServiceByID(serviceID)
-	if err != nil {
-		return err
-	}
-
-	// Уникальный коэффициент поддержки для каждой услуги по ID
-	var supportLevel float64
-	switch serviceID {
-	case 1: // Пользовательские лицензии
-		supportLevel = 1.0
-	case 2: // Серверные лицензии
-		supportLevel = 1.3
-	case 3: // Корпоративная подписка
-		supportLevel = 1.7
-	default:
-		// Если нет конкретного ID, используем тип лицензии
-		switch service.LicenseType {
-		case "per_user":
-			supportLevel = 1.0
-		case "per_core":
-			supportLevel = 1.2
-		case "subscription":
-			supportLevel = 1.5
-		default:
-			supportLevel = 1.0
-		}
-	}
-
-	// Всегда создаем новую запись
+// Добавить услугу в заявку (просто создать связь)
+func (r *Repository) AddServiceToOrder(orderID, serviceID uint) error {
 	orderService := ds.OrderService{
-		OrderID:      orderID,
-		ServiceID:    serviceID,
-		Users:        users,
-		Cores:        cores,
-		Period:       period,
-		SupportLevel: supportLevel,
-		UnitPrice:    service.BasePrice,
-		SubTotal:     0, // Будет рассчитано при обновлении параметров
+		OrderID:   orderID,
+		ServiceID: serviceID,
 	}
-
 	return r.db.Create(&orderService).Error
 }
 
-// Обновить параметры услуги в заявке и пересчитать стоимость
-func (r *Repository) UpdateServiceInOrder(orderServiceID uint, users, cores, period int, supportLevel float64) error {
-	var os ds.OrderService
-	err := r.db.First(&os, orderServiceID).Error
-	if err != nil {
-		return err
-	}
-
-	// Получаем данные услуги
-	service, err := r.GetServiceByID(os.ServiceID)
-	if err != nil {
-		return err
-	}
-
-	// Вычисляем количество в зависимости от типа лицензии
-	var quantity int
-	switch service.LicenseType {
-	case "per_user":
-		quantity = users
-	case "per_core":
-		quantity = cores
-	case "subscription":
-		quantity = period
-	default:
-		quantity = 1
-	}
-
-	// Рассчитываем SubTotal с учетом коэффициента поддержки
-	subtotal := service.BasePrice * float64(quantity) * supportLevel
-
-	// Обновляем запись
-	os.Users = users
-	os.Cores = cores
-	os.Period = period
-	os.SupportLevel = supportLevel
-	os.SubTotal = subtotal
-
-	return r.db.Save(&os).Error
+// Удалить услугу из заявки
+func (r *Repository) RemoveServiceFromOrder(orderServiceID uint) error {
+	return r.db.Delete(&ds.OrderService{}, orderServiceID).Error
 }

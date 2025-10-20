@@ -43,13 +43,14 @@ func (r *Repository) GetDraftOrder(userID uint) (*ds.LicenseOrder, error) {
 // Создать новую заявку в статусе черновик
 func (r *Repository) CreateDraftOrder(userID uint) (*ds.LicenseOrder, error) {
 	order := ds.LicenseOrder{
-		Status:        "черновик",
-		CreatedAt:     time.Now(),
-		CreatorID:     userID,
-		CompanyName:   "",
-		LicensePeriod: 1,
-		ContactEmail:  "",
-		Priority:      "medium",
+		Status:       "черновик",
+		CreatedAt:    time.Now(),
+		CreatorID:    userID,
+		CompanyName:  "",
+		Users:        0,
+		Cores:        0,
+		Period:       1,
+		SupportLevel: 1.0,
 	}
 
 	err := r.db.Create(&order).Error
@@ -80,7 +81,7 @@ func (r *Repository) GetOrCreateOrder(id uint) (*ds.LicenseOrder, error) {
 	return &order, nil
 }
 
-// Получить услуги в заявке (с данными из М-М таблицы)
+// Получить услуги в заявке (вычисляем стоимость на лету)
 func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) {
 	// Проверяем что заявка существует и не удалена
 	order, err := r.GetOrderByID(orderID)
@@ -98,15 +99,10 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 		return []ServiceInOrder{}, nil
 	}
 
-	// Получаем уникальные ID услуг
-	serviceIDMap := make(map[uint]bool)
-	for _, os := range orderServices {
-		serviceIDMap[os.ServiceID] = true
-	}
-
+	// Получаем ID услуг
 	var serviceIDs []uint
-	for id := range serviceIDMap {
-		serviceIDs = append(serviceIDs, id)
+	for _, os := range orderServices {
+		serviceIDs = append(serviceIDs, os.ServiceID)
 	}
 
 	var dbServices []ds.LicenseService
@@ -121,7 +117,7 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 		serviceMap[s.ID] = s
 	}
 
-	// Создаем список услуг в заявке (каждая запись М-М = отдельный элемент)
+	// Создаем список услуг с расчетом стоимости
 	services := make([]ServiceInOrder, 0, len(orderServices))
 	for _, os := range orderServices {
 		s, exists := serviceMap[os.ServiceID]
@@ -134,19 +130,30 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 			imageURL = *s.ImageURL
 		}
 
+		// Вычисляем количество в зависимости от типа лицензии
+		var quantity int
+		switch s.LicenseType {
+		case "per_user":
+			quantity = order.Users
+		case "per_core":
+			quantity = order.Cores
+		case "subscription":
+			quantity = order.Period
+		default:
+			quantity = 1
+		}
+
+		// Рассчитываем стоимость на лету
+		subtotal := s.BasePrice * float64(quantity) * order.SupportLevel
+
 		services = append(services, ServiceInOrder{
-			OrderServiceID: os.ID,
-			ID:             s.ID,
-			Name:           s.Name,
-			Description:    s.Description,
-			ImageURL:       imageURL,
-			BasePrice:      s.BasePrice,
-			LicenseType:    s.LicenseType,
-			Users:          os.Users,
-			Cores:          os.Cores,
-			Period:         os.Period,
-			SupportLevel:   os.SupportLevel,
-			SubTotal:       os.SubTotal,
+			ID:          s.ID,
+			Name:        s.Name,
+			Description: s.Description,
+			ImageURL:    imageURL,
+			BasePrice:   s.BasePrice,
+			LicenseType: s.LicenseType,
+			SubTotal:    subtotal,
 		})
 	}
 	return services, nil
@@ -192,4 +199,16 @@ func (r *Repository) GetDraftOrderID(userID uint) uint {
 		return 0
 	}
 	return order.ID
+}
+
+// Обновить параметры расчета в заявке
+func (r *Repository) UpdateOrderParams(orderID uint, users, cores, period int, supportLevel float64) error {
+	return r.db.Model(&ds.LicenseOrder{}).
+		Where("id = ?", orderID).
+		Updates(map[string]interface{}{
+			"users":         users,
+			"cores":         cores,
+			"period":        period,
+			"support_level": supportLevel,
+		}).Error
 }

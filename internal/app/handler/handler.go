@@ -125,23 +125,11 @@ func (h *Handler) GetLicenseCalculator(ctx *gin.Context) {
 		return
 	}
 
-	// Получаем средние значения параметров из существующих записей (для отображения в форме)
-	users := 0
-	cores := 0
-	period := 1
-	if len(services) > 0 {
-		for _, s := range services {
-			if s.Users > users {
-				users = s.Users
-			}
-			if s.Cores > cores {
-				cores = s.Cores
-			}
-			if s.Period > period {
-				period = s.Period
-			}
-		}
-	}
+	// Параметры берем из заявки (общие для всех услуг)
+	users := order.Users
+	cores := order.Cores
+	period := order.Period
+	supportLevel := order.SupportLevel
 
 	// Считаем итоговую стоимость
 	var totalCost float64
@@ -152,13 +140,14 @@ func (h *Handler) GetLicenseCalculator(ctx *gin.Context) {
 	count := h.Repository.GetOrderCount(order.ID)
 
 	ctx.HTML(http.StatusOK, "license_calculator.html", gin.H{
-		"services":  services,
-		"count":     count,
-		"orderID":   order.ID,
-		"totalCost": totalCost,
-		"users":     users,
-		"cores":     cores,
-		"period":    period,
+		"services":     services,
+		"count":        count,
+		"orderID":      order.ID,
+		"totalCost":    totalCost,
+		"users":        users,
+		"cores":        cores,
+		"period":       period,
+		"supportLevel": supportLevel,
 	})
 }
 
@@ -184,8 +173,8 @@ func (h *Handler) AddModelToCart(ctx *gin.Context) {
 		return
 	}
 
-	// Добавляем с параметрами по умолчанию (пользователь настроит в калькуляторе)
-	err = h.Repository.AddServiceToOrder(order.ID, uint(modelID), 0, 0, 0)
+	// Добавляем услугу в заявку (просто связь)
+	err = h.Repository.AddServiceToOrder(order.ID, uint(modelID))
 	if err != nil {
 		h.errorHandler(ctx, http.StatusInternalServerError, err)
 		return
@@ -242,20 +231,19 @@ func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 		}
 	}
 
-	// Получаем все services в заявке
-	services, err := h.Repository.GetServicesInOrder(uint(orderID))
+	// Коэффициент поддержки (можно добавить в форму или оставить фиксированным)
+	supportLevel := 1.0
+	if sl := ctx.PostForm("support_level"); sl != "" {
+		if val, err := strconv.ParseFloat(sl, 64); err == nil && val > 0 {
+			supportLevel = val
+		}
+	}
+
+	// Обновляем параметры в заявке (они общие для всех услуг)
+	err = h.Repository.UpdateOrderParams(uint(orderID), users, cores, period, supportLevel)
 	if err != nil {
 		h.errorHandler(ctx, http.StatusInternalServerError, err)
 		return
-	}
-
-	// Обновляем каждую услугу с новыми параметрами
-	// Коэффициент поддержки остается неизменным (фиксированный)
-	for _, service := range services {
-		err = h.Repository.UpdateServiceInOrder(service.OrderServiceID, users, cores, period, service.SupportLevel)
-		if err != nil {
-			logrus.Error(err)
-		}
 	}
 
 	ctx.Redirect(http.StatusFound, fmt.Sprintf("/license-calculator/%d", orderID))
