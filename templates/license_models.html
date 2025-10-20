@@ -11,10 +11,17 @@
     </div>
     
     <div class="cart-header">
-        <a href="/license-calculator" class="cart">
+        {{ if gt .draftOrderID 0 }}
+        <a href="/license-calculator/{{ .draftOrderID }}" class="cart">
             <img src="http://localhost:9000/img/cart.png" alt="Корзина">
             <div class="cart-count">{{ .cartCount }}</div>
         </a>
+        {{ else }}
+        <div class="cart" style="opacity: 0.5; cursor: not-allowed;">
+            <img src="http://localhost:9000/img/cart.png" alt="Корзина">
+            <div class="cart-count">0</div>
+        </div>
+        {{ end }}
     </div>
     
     <div class="content">
@@ -24,8 +31,6 @@
         
         <form class="search-form" action="/license-models" method="GET">
             <input class="search-input" type="text" name="query" placeholder="Поиск модели лицензирования" value="{{ .query }}">
-            <!-- value="{{ .query }}" нужно для того, чтобы из обработчика передавать
-            введенный запрос обратно на страницу. Тем самым введенный текст в поле поиска будет сохраняться-->
             <button class="search-btn" type="submit">Найти</button>
         </form>
         
@@ -33,18 +38,18 @@
             {{ range .models }}
             <div class="card">
                 <div class="card-icon">
-                    <img src="http://localhost:9000/img/{{ .Icon }}" alt="{{ .Name }}">
+                    <img src="http://localhost:9000/img/{{ .ImageURL }}" alt="{{ .Name }}">
                 </div>
                 <div class="card-title">{{ .Name }}</div>
                 <div class="card-desc">{{ .Description }}</div>
                 
                 <a href="/model/{{ .ID }}" class="card-btn">Подробнее</a>
                 
-                <!-- Кнопка добавления в корзину (как в RIP-25-26) -->
+                <!-- Кнопка добавления в корзину -->
                 <form action="/model/{{ .ID }}/add-to-cart" method="post">
                     <button type="submit" class="card-btn add-cart-btn" 
                             style="background: #28a745; border: none; cursor: pointer; right: 12px; left: auto; color: white; width: 162px;">
-                        🛒
+                        🛒 В корзину
                     </button>
                 </form>
             </div>

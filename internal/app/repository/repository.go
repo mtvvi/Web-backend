@@ -1,8 +1,8 @@
 package repository
 
 import (
+	"backend/internal/app/ds"
 	"fmt"
-	"strings"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -18,295 +18,244 @@ func New(dsn string) (*Repository, error) {
 		return nil, err
 	}
 
+	// Автоматическая миграция всех таблиц
+	err = db.AutoMigrate(
+		&ds.User{},
+		&ds.LicenseService{},
+		&ds.LicenseOrder{},
+		&ds.OrderService{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
+	}
+
 	return &Repository{
 		db: db,
 	}, nil
 }
 
-type LicenseModel struct {
-	ID            int
-	Name          string
-	Description   string
-	Icon          string
-	BasePrice     float64 // Цена за единицу
-	SupportCoeff  float64 // Коэффициент поддержки
-	DiscountCoeff float64 // Коэффициент скидки
-	PricingType   string  // "per_user", "per_core", "subscription"
+// Простая структура услуги для отображения
+type LicenseService struct {
+	ID          uint
+	Name        string
+	Description string
+	ImageURL    string
+	BasePrice   float64
+	LicenseType string // per_user, per_core, subscription
 }
 
-// Заявка на расчет стоимости лицензирования
-type LicenseRequest struct {
-	ID                 int     // ID заявки
-	CompanyName        string  // Название компании
-	UserCount          int     // Количество пользователей
-	CoreCount          int     // Общее количество ядер
-	LicensePeriodYears int     // Период лицензии (лет)
-	SupportLevel       string  // Уровень поддержки: basic, standard, premium
-	RequestDate        string  // Дата заявки
-	TotalCost          float64 // Итоговая стоимость
-	// Связь многие-ко-многим с моделями лицензирования
-	LicenseParameters []LicenseToRequest // Поля м-м
+// Структура услуги в заявке (с данными из М-М таблицы)
+type ServiceInOrder struct {
+	OrderServiceID uint // ID записи в order_services
+	ID             uint
+	Name           string
+	Description    string
+	ImageURL       string
+	BasePrice      float64
+	LicenseType    string
+	Users          int     // из таблицы order_services
+	Cores          int     // из таблицы order_services
+	Period         int     // из таблицы order_services
+	SupportLevel   float64 // из таблицы order_services
+	SubTotal       float64 // из таблицы order_services
 }
 
-// Связующая структура для связи многие-ко-многим (Поля м-м)
-type LicenseToRequest struct {
-	LicenseModelId     int     // ID модели лицензирования
-	RequiredQuantity   int     // Требуемое количество (вводится пользователем)
-	CalculatedCost     float64 // Рассчитанная стоимость (результат расчета)
-	BaseCalculatedCost float64 // Цена до применения скидки
-	AppliedDiscount    float64 // Примененная скидка (результат расчета)
-	SupportCoeff       float64 // Коэффициент поддержки (остается как есть)
-}
-
-func (r *Repository) GetLicenseModels() ([]LicenseModel, error) {
-	// Получаем данные из БД через новые методы
-	services, err := r.GetAllServices()
-	if err != nil {
-		return []LicenseModel{}, err
-	}
-
-	// Преобразуем в старый формат для совместимости с шаблонами
-	models := make([]LicenseModel, len(services))
-	for i, service := range services {
-		// Используем ImageURL из базы или дефолтную картинку если нет
-		iconName := "rectangle-2-6.png" // дефолт
-		if service.ImageURL != nil && *service.ImageURL != "" {
-			iconName = *service.ImageURL
-		}
-
-		models[i] = LicenseModel{
-			ID:            int(service.ID),
-			Name:          service.Name,
-			Description:   service.Description,
-			Icon:          iconName,
-			BasePrice:     service.BasePrice,
-			SupportCoeff:  0, // Динамические коэффициенты рассчитываются в калькуляторе
-			DiscountCoeff: 0,
-			PricingType:   "per_unit",
-		}
-	}
-
-	return models, nil
-}
-
-func (r *Repository) GetLicenseModelsByName(name string) ([]LicenseModel, error) {
-	models, err := r.GetLicenseModels()
-	if err != nil {
-		return []LicenseModel{}, err
-	}
-
-	var result []LicenseModel
-	for _, model := range models {
-		// Поиск только по названию модели
-		if strings.Contains(strings.ToLower(model.Name), strings.ToLower(name)) {
-			result = append(result, model)
-		}
-	}
-
-	return result, nil
-}
-
-func (r *Repository) GetCartModels() ([]LicenseModel, error) {
-	// Возвращаем только модели, которые в заявке (корзине) - без подписки
-	models, err := r.GetLicenseModels()
-	if err != nil {
-		return []LicenseModel{}, err
-	}
-
-	// Возвращаем только первые 2 модели (исключаем подписку)
-	cartModels := make([]LicenseModel, 0)
-	for _, model := range models {
-		if model.Name != "Подписка" {
-			cartModels = append(cartModels, model)
-		}
-	}
-
-	return cartModels, nil
-}
-
-func (r *Repository) GetLicenseModelByID(id int) (LicenseModel, error) {
-	// Получаем все лицензионные модели
-	models, err := r.GetLicenseModels()
-	if err != nil {
-		return LicenseModel{}, err
-	}
-
-	// Ищем модель по ID
-	for _, model := range models {
-		if model.ID == id {
-			return model, nil
-		}
-	}
-
-	// Если модель не найдена, возвращаем ошибку
-	return LicenseModel{}, fmt.Errorf("license model with ID %d not found", id)
-}
-
-// Создание новой заявки с дефолтными значениями (как в примере с планетами)
-func (r *Repository) GetDefaultLicenseRequest() *LicenseRequest {
-	request := &LicenseRequest{
-		ID:                 1,
-		CompanyName:        "ООО \"Инновационные решения\"",
-		UserCount:          50,
-		CoreCount:          40,
-		LicensePeriodYears: 3,
-		SupportLevel:       "standard",
-		RequestDate:        "08.10.25",
-		TotalCost:          0,
-	}
-
-	// Поля м-м
-	request.LicenseParameters = []LicenseToRequest{
-		{
-			LicenseModelId:   1,                 // Пользовательские лицензии
-			RequiredQuantity: request.UserCount, // Берется из поля заявки
-			CalculatedCost:   0,                 // Результат расчета
-			AppliedDiscount:  1.0,               // Результат расчета
-			SupportCoeff:     1.0,               // Результат расчета
-		},
-		{
-			LicenseModelId:   2,                 // Серверные лицензии
-			RequiredQuantity: request.CoreCount, // Берется из поля заявки
-			CalculatedCost:   0,                 // Результат расчета
-			AppliedDiscount:  1.0,               // Результат расчета
-			SupportCoeff:     1.0,               // Результат расчета
-		},
-	}
-
-	return request
-}
-
-// Расчет стоимости лицензирования с использованием связей многие-ко-многим
-func (r *Repository) CalculateLicenseCost(request *LicenseRequest) (*LicenseRequest, error) {
-	models, err := r.GetLicenseModels()
+// Получить все услуги из БД
+func (r *Repository) GetAllServices() ([]LicenseService, error) {
+	var dbServices []ds.LicenseService
+	err := r.db.Where("is_deleted = ?", false).Find(&dbServices).Error
 	if err != nil {
 		return nil, err
 	}
 
-	totalCost := 0.0
-
-	// Обрабатываем каждую связь заявка-модель (Поля м-м)
-	for i := range request.LicenseParameters {
-		licenseParam := &request.LicenseParameters[i]
-
-		// Находим модель лицензирования
-		var licenseModel *LicenseModel
-		for _, model := range models {
-			if model.ID == licenseParam.LicenseModelId {
-				licenseModel = &model
-				break
-			}
+	services := make([]LicenseService, len(dbServices))
+	for i, s := range dbServices {
+		imageURL := "rectangle-2-6.png"
+		if s.ImageURL != nil && *s.ImageURL != "" {
+			imageURL = *s.ImageURL
 		}
-
-		if licenseModel == nil {
-			continue
+		services[i] = LicenseService{
+			ID:          s.ID,
+			Name:        s.Name,
+			Description: s.Description,
+			ImageURL:    imageURL,
+			BasePrice:   s.BasePrice,
+			LicenseType: s.LicenseType,
 		}
-
-		var modelCost float64
-
-		switch licenseModel.PricingType {
-		case "per_user":
-			// Базовая стоимость = Требуемое количество пользователей × Цена за пользователя × Годы
-			baseCost := float64(licenseParam.RequiredQuantity) * licenseModel.BasePrice * float64(request.LicensePeriodYears)
-
-			// Применяем скидку для больших объемов (>100 пользователей)
-			discountCoeff := 1.0
-			if licenseParam.RequiredQuantity > 100 {
-				discountCoeff = licenseModel.DiscountCoeff
-			}
-
-			// Применяем коэффициент поддержки
-			supportCoeff := 1.0
-			if request.SupportLevel == "premium" {
-				supportCoeff = licenseModel.SupportCoeff
-			}
-
-			modelCost = baseCost * discountCoeff * supportCoeff
-
-			// Сохраняем рассчитанные коэффициенты
-			licenseParam.AppliedDiscount = discountCoeff
-			licenseParam.SupportCoeff = supportCoeff
-
-		case "per_core":
-			// Базовая стоимость = Требуемое количество ядер × Цена за ядро × Годы
-			baseCost := float64(licenseParam.RequiredQuantity) * licenseModel.BasePrice * float64(request.LicensePeriodYears)
-
-			// Скидка для больших серверных инсталляций (>50 ядер)
-			discountCoeff := 1.0
-			if licenseParam.RequiredQuantity > 50 {
-				discountCoeff = licenseModel.DiscountCoeff
-			}
-
-			// Применяем коэффициент поддержки
-			supportCoeff := 1.0
-			if request.SupportLevel != "basic" {
-				supportCoeff = licenseModel.SupportCoeff
-			}
-
-			modelCost = baseCost * discountCoeff * supportCoeff
-
-			// Сохраняем рассчитанные коэффициенты
-			licenseParam.AppliedDiscount = discountCoeff
-			licenseParam.SupportCoeff = supportCoeff
-
-		case "subscription":
-			// Подписка = Базовая цена × Годы
-			baseCost := licenseModel.BasePrice * float64(request.LicensePeriodYears)
-
-			// Скидка при многолетних контрактах (>2 лет)
-			discountCoeff := 1.0
-			if request.LicensePeriodYears > 2 {
-				discountCoeff = licenseModel.DiscountCoeff
-			}
-
-			modelCost = baseCost * discountCoeff
-			supportCoeff := 1.0 // Поддержка включена в подписку
-
-			// Сохраняем рассчитанные коэффициенты
-			licenseParam.AppliedDiscount = discountCoeff
-			licenseParam.SupportCoeff = supportCoeff
-		}
-
-		// Сохраняем рассчитанную стоимость
-		licenseParam.CalculatedCost = modelCost
-		totalCost += modelCost
 	}
-
-	// Дополнительные расходы (упрощенно)
-	implementationCost := totalCost * 0.10
-	trainingCost := 0.0
-	if request.UserCount > 20 {
-		trainingCost = float64(request.UserCount) * 5000.0
-	}
-
-	// Итоговая стоимость
-	finalCost := totalCost + implementationCost + trainingCost
-	request.TotalCost = finalCost
-
-	return request, nil
+	return services, nil
 }
 
+// Получить услугу по ID
+func (r *Repository) GetServiceByID(id uint) (*LicenseService, error) {
+	var dbService ds.LicenseService
+	err := r.db.Where("id = ? AND is_deleted = ?", id, false).First(&dbService).Error
+	if err != nil {
+		return nil, err
+	}
+
+	imageURL := "rectangle-2-6.png"
+	if dbService.ImageURL != nil && *dbService.ImageURL != "" {
+		imageURL = *dbService.ImageURL
+	}
+
+	service := &LicenseService{
+		ID:          dbService.ID,
+		Name:        dbService.Name,
+		Description: dbService.Description,
+		ImageURL:    imageURL,
+		BasePrice:   dbService.BasePrice,
+		LicenseType: dbService.LicenseType,
+	}
+	return service, nil
+}
+
+// Поиск услуг по имени
+func (r *Repository) SearchServicesByName(name string) ([]LicenseService, error) {
+	var dbServices []ds.LicenseService
+	err := r.db.Where("name ILIKE ? AND is_deleted = ?", "%"+name+"%", false).Find(&dbServices).Error
+	if err != nil {
+		return nil, err
+	}
+
+	services := make([]LicenseService, len(dbServices))
+	for i, s := range dbServices {
+		imageURL := "rectangle-2-6.png"
+		if s.ImageURL != nil && *s.ImageURL != "" {
+			imageURL = *s.ImageURL
+		}
+		services[i] = LicenseService{
+			ID:          s.ID,
+			Name:        s.Name,
+			Description: s.Description,
+			ImageURL:    imageURL,
+			BasePrice:   s.BasePrice,
+			LicenseType: s.LicenseType,
+		}
+	}
+	return services, nil
+}
+
+// Получить заявку или создать новую
+func (r *Repository) GetOrCreateOrder(id uint) (*ds.LicenseOrder, error) {
+	var order ds.LicenseOrder
+	err := r.db.Where("id = ? AND status != ?", id, "удалён").First(&order).Error
+	if err != nil {
+		return nil, fmt.Errorf("заявка не найдена")
+	}
+	return &order, nil
+}
+
+// Получить услуги в заявке (с данными из М-М таблицы)
+func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) {
+	// Проверяем что заявка существует и не удалена
+	order, err := r.GetOrderByID(orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	var orderServices []ds.OrderService
+	err = r.db.Where("order_id = ?", order.ID).Find(&orderServices).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(orderServices) == 0 {
+		return []ServiceInOrder{}, nil
+	}
+
+	// Получаем уникальные ID услуг
+	serviceIDMap := make(map[uint]bool)
+	for _, os := range orderServices {
+		serviceIDMap[os.ServiceID] = true
+	}
+
+	var serviceIDs []uint
+	for id := range serviceIDMap {
+		serviceIDs = append(serviceIDs, id)
+	}
+
+	var dbServices []ds.LicenseService
+	err = r.db.Where("id IN ? AND is_deleted = ?", serviceIDs, false).Find(&dbServices).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// Создаем map для быстрого доступа к данным услуг
+	serviceMap := make(map[uint]ds.LicenseService)
+	for _, s := range dbServices {
+		serviceMap[s.ID] = s
+	}
+
+	// Создаем список услуг в заявке (каждая запись М-М = отдельный элемент)
+	services := make([]ServiceInOrder, 0, len(orderServices))
+	for _, os := range orderServices {
+		s, exists := serviceMap[os.ServiceID]
+		if !exists {
+			continue // Услуга удалена
+		}
+
+		imageURL := "rectangle-2-6.png"
+		if s.ImageURL != nil && *s.ImageURL != "" {
+			imageURL = *s.ImageURL
+		}
+
+		services = append(services, ServiceInOrder{
+			OrderServiceID: os.ID,
+			ID:             s.ID,
+			Name:           s.Name,
+			Description:    s.Description,
+			ImageURL:       imageURL,
+			BasePrice:      s.BasePrice,
+			LicenseType:    s.LicenseType,
+			Users:          os.Users,
+			Cores:          os.Cores,
+			Period:         os.Period,
+			SupportLevel:   os.SupportLevel,
+			SubTotal:       os.SubTotal,
+		})
+	}
+	return services, nil
+}
+
+// Получить количество услуг в заявке (количество записей, не сумму)
+func (r *Repository) GetOrderCount(orderID uint) int {
+	order, err := r.GetOrderByID(orderID)
+	if err != nil {
+		return 0
+	}
+
+	var count int64
+	err = r.db.Model(&ds.OrderService{}).Where("order_id = ?", order.ID).Count(&count).Error
+	if err != nil {
+		return 0
+	}
+
+	return int(count)
+}
+
+// Получить количество в корзине (черновик для пользователя)
 func (r *Repository) GetCartCount() int {
-	// Используем тестового пользователя ID=1 для демонстрации
 	userID := uint(1)
+	order, err := r.GetDraftOrder(userID)
+	if err != nil {
+		return 0 // Нет черновика - корзина пуста
+	}
 
-	// Получаем заявку в статусе черновик
-	order, err := r.GetOrCreateDraftOrder(userID)
+	var count int64
+	err = r.db.Model(&ds.OrderService{}).Where("order_id = ?", order.ID).Count(&count).Error
 	if err != nil {
 		return 0
 	}
 
-	// Считаем количество услуг в заявке
-	orderServices, err := r.GetOrderServices(order.ID)
+	return int(count)
+}
+
+// Получить ID черновика заявки (или 0 если нет)
+func (r *Repository) GetDraftOrderID(userID uint) uint {
+	order, err := r.GetDraftOrder(userID)
 	if err != nil {
 		return 0
 	}
-
-	// Возвращаем общее количество товаров (сумма количества всех услуг)
-	totalCount := 0
-	for _, service := range orderServices {
-		totalCount += service.Quantity
-	}
-
-	return totalCount
+	return order.ID
 }

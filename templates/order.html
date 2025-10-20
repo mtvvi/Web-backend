@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>{{ if .model }}{{ .model.Name }} - Детали лицензии{{ else }}{{ .request.CompanyName }} - Заявка #{{ .request.ID }}{{ end }}</title>
+    <title>{{ if .model }}{{ .model.Name }} - Детали лицензии{{ else }}Ошибка{{ end }}</title>
     <link rel="stylesheet" href="/static/styles/license_models.css">
 </head>
 <body>
@@ -18,7 +18,7 @@
         {{ if .model }}
         <div class="model-detail-card">
             <div class="model-icon-large">
-                <img src="http://localhost:9000/img/{{ .model.Icon }}" alt="{{ .model.Name }}" class="model-detail-image">
+                <img src="http://localhost:9000/img/{{ .model.ImageURL }}" alt="{{ .model.Name }}" class="model-detail-image">
             </div>
             
             <div class="model-detail-content">
@@ -29,36 +29,20 @@
                 </div>
                 
                 <div style="margin-top: 30px; padding: 20px; background: #f9f9f9; border-radius: 8px;">
-                    <div style="font-size: 16px; color: #555; text-align: center; line-height: 1.6;">
-                        <strong>Точная стоимость рассчитывается индивидуально</strong><br>
-                        в зависимости от количества пользователей, ядер,<br>
-                        периода лицензии и выбранного уровня поддержки.<br><br>
-                        <a href="/license-calculator" style="color: #007bff; text-decoration: none; font-weight: 600;">
-                            → Перейти к калькулятору для расчета
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {{ end }}
-
-        <!-- Если показываем заявку -->
-        {{ if .request }}
-        <div class="model-detail-card">
-            <div class="model-detail-content">
-                <h1 class="model-detail-title">Заявка #{{ .request.ID }}</h1>
-                <div class="model-detail-desc">{{ .request.CompanyName }}</div>
-                
-                <div style="margin-top: 20px;">
-                    <div><strong>Дата заявки:</strong> {{ .request.RequestDate }}</div>
-                    <div><strong>Пользователи:</strong> {{ .request.UserCount }}</div>
-                    <div><strong>Ядра:</strong> {{ .request.CoreCount }}</div>
-                    <div><strong>Период:</strong> {{ .request.LicensePeriodYears }} лет</div>
-                    <div><strong>Поддержка:</strong> {{ .request.SupportLevel }}</div>
-                </div>
-                
-                <div class="model-detail-price" style="margin-top: 30px;">
-                    <span><strong>Итоговая стоимость: {{ printf "%.0f" .request.TotalCost }} руб.</strong></span>
+                    <form action="/model/{{ .model.ID }}/add-to-cart" method="post">
+                        <button type="submit" style="width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                            Добавить в заявку
+                        </button>
+                        <div style="font-size: 14px; color: #666; text-align: center; margin-top: 15px;">
+                            {{ if gt .draftOrderID 0 }}
+                            <a href="/license-calculator/{{ .draftOrderID }}" style="color: #007bff; text-decoration: none;">
+                                → Перейти к калькулятору для расчета стоимости
+                            </a>
+                            {{ else }}
+                            <span style="color: #999;">После добавления перейдите в калькулятор для расчета</span>
+                            {{ end }}
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
