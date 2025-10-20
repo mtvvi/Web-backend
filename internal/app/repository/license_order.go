@@ -43,14 +43,12 @@ func (r *Repository) GetDraftOrder(userID uint) (*ds.LicenseOrder, error) {
 // Создать новую заявку в статусе черновик
 func (r *Repository) CreateDraftOrder(userID uint) (*ds.LicenseOrder, error) {
 	order := ds.LicenseOrder{
-		Status:       "черновик",
-		CreatedAt:    time.Now(),
-		CreatorID:    userID,
-		CompanyName:  "",
-		Users:        0,
-		Cores:        0,
-		Period:       1,
-		SupportLevel: 1.0,
+		Status:    "черновик",
+		CreatedAt: time.Now(),
+		CreatorID: userID,
+		Users:     0,
+		Cores:     0,
+		Period:    1,
 	}
 
 	err := r.db.Create(&order).Error
@@ -143,17 +141,18 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 			quantity = 1
 		}
 
-		// Рассчитываем стоимость на лету
-		subtotal := s.BasePrice * float64(quantity) * order.SupportLevel
+		// Рассчитываем стоимость на лету (теперь SupportLevel из OrderService)
+		subtotal := s.BasePrice * float64(quantity) * os.SupportLevel
 
 		services = append(services, ServiceInOrder{
-			ID:          s.ID,
-			Name:        s.Name,
-			Description: s.Description,
-			ImageURL:    imageURL,
-			BasePrice:   s.BasePrice,
-			LicenseType: s.LicenseType,
-			SubTotal:    subtotal,
+			ID:           s.ID,
+			Name:         s.Name,
+			Description:  s.Description,
+			ImageURL:     imageURL,
+			BasePrice:    s.BasePrice,
+			LicenseType:  s.LicenseType,
+			SupportLevel: os.SupportLevel,
+			SubTotal:     subtotal,
 		})
 	}
 	return services, nil
@@ -201,14 +200,28 @@ func (r *Repository) GetDraftOrderID(userID uint) uint {
 	return order.ID
 }
 
-// Обновить параметры расчета в заявке
-func (r *Repository) UpdateOrderParams(orderID uint, users, cores, period int, supportLevel float64) error {
+// Обновить параметры расчета в заявке (теперь без supportLevel)
+func (r *Repository) UpdateOrderParams(orderID uint, users, cores, period int) error {
 	return r.db.Model(&ds.LicenseOrder{}).
 		Where("id = ?", orderID).
 		Updates(map[string]interface{}{
-			"users":         users,
-			"cores":         cores,
-			"period":        period,
-			"support_level": supportLevel,
+			"users":  users,
+			"cores":  cores,
+			"period": period,
 		}).Error
+}
+
+// Обновить коэффициент поддержки для конкретной услуги в заявке
+func (r *Repository) UpdateServiceSupportLevel(orderID, serviceID uint, supportLevel float64) error {
+	// Ограничиваем значение в диапазоне 0.7 - 3.0
+	if supportLevel < 0.7 {
+		supportLevel = 0.7
+	}
+	if supportLevel > 3.0 {
+		supportLevel = 3.0
+	}
+
+	return r.db.Model(&ds.OrderService{}).
+		Where("order_id = ? AND service_id = ?", orderID, serviceID).
+		Update("support_level", supportLevel).Error
 }

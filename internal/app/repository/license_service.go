@@ -18,12 +18,13 @@ type LicenseService struct {
 
 // Структура услуги в заявке (данные из license_services + расчет на лету)
 type ServiceInOrder struct {
-	ID          uint
-	Name        string
-	Description string
-	ImageURL    string
-	BasePrice   float64
-	LicenseType string
+	ID           uint
+	Name         string
+	Description  string
+	ImageURL     string
+	BasePrice    float64
+	LicenseType  string
+	SupportLevel float64 // Индивидуальный коэффициент из OrderService
 	// Расчетные поля (вычисляются на лету из LicenseOrder)
 	SubTotal float64 // BasePrice × quantity × SupportLevel
 }
@@ -126,11 +127,22 @@ func (r *Repository) SearchServicesByName(name string) ([]LicenseService, error)
 
 // Методы для М-М связей (простая связь услуг с заявкой)
 
-// Добавить услугу в заявку (просто создать связь)
+// Добавить услугу в заявку (с дефолтным коэффициентом поддержки)
 func (r *Repository) AddServiceToOrder(orderID, serviceID uint) error {
+	// Проверяем, не добавлена ли уже эта услуга
+	var existing ds.OrderService
+	err := r.db.Where("order_id = ? AND service_id = ?", orderID, serviceID).First(&existing).Error
+	
+	if err == nil {
+		// Услуга уже есть в заявке - просто игнорируем (не ошибка)
+		return nil
+	}
+	
+	// Услуги нет - добавляем
 	orderService := ds.OrderService{
-		OrderID:   orderID,
-		ServiceID: serviceID,
+		OrderID:      orderID,
+		ServiceID:    serviceID,
+		SupportLevel: 1.0, // По умолчанию
 	}
 	return r.db.Create(&orderService).Error
 }

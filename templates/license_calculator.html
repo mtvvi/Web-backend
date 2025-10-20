@@ -24,78 +24,73 @@
         {{ else }}
         <h1 class="calculator-title">Моя заявка на расчет стоимости лицензирования</h1>
         
-        <!-- Форма с параметрами расчета -->
-        <form action="/calculator/{{ .orderID }}/update" method="post" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h3 style="margin-top: 0; margin-bottom: 15px; color: #333;">Параметры расчета</h3>
-            <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
-                <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Количество пользователей:</label>
-                    <input type="number" name="users" value="{{ .users }}" min="0" 
-                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Количество CPU ядер:</label>
-                    <input type="number" name="cores" value="{{ .cores }}" min="0" 
-                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Период лицензии (лет):</label>
-                    <input type="number" name="period" value="{{ .period }}" min="1" 
-                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Коэффициент поддержки:</label>
-                    <input type="number" name="supportLevel" value="{{ .supportLevel }}" min="1.0" max="2.0" step="0.1" 
-                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <!-- Форма с параметрами расчета И коэффициентами услуг -->
+        <form action="/calculator/{{ .orderID }}/update" method="post">
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="margin-top: 0; margin-bottom: 15px; color: #333;">Параметры расчета</h3>
+                <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Количество пользователей:</label>
+                        <input type="number" name="users" value="{{ .users }}" min="0" 
+                               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Количество CPU ядер:</label>
+                        <input type="number" name="cores" value="{{ .cores }}" min="0" 
+                               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-weight: 500;">Период лицензии (лет):</label>
+                        <input type="number" name="period" value="{{ .period }}" min="1" 
+                               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
                 </div>
             </div>
 
-            <button type="submit" style="padding: 10px 30px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;">
+            <!-- Заголовок таблицы -->
+            <div class="license-table-header">
+                <div class="header-model">Модель лицензирования</div>
+                <div class="header-price">Цена за единицу (руб.)</div>
+                <div class="header-quantity">Коэффициент поддержки</div>
+                <div class="header-total">Итого (руб.)</div>
+            </div>
+            
+            <section class="cart-list">
+                {{ range .services }}
+                <article class="cart-item">
+                    <div class="license-model-cell">
+                        <img src="http://localhost:9000/img/{{ .ImageURL }}" alt="{{ .Name }}" class="license-image">
+                        <div class="license-info">
+                            <div class="license-name">{{ .Name }}</div>
+                            <div class="license-desc">{{ .Description }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="price-cell">
+                        <span class="price-value">{{ printf "%.0f" .BasePrice }}</span>
+                    </div>
+                    
+                    <div class="quantity-cell">
+                        <input type="number" 
+                               name="support_level_{{ .ID }}" 
+                               value="{{ printf "%.2f" .SupportLevel }}" 
+                               min="0.7" 
+                               max="3.0" 
+                               step="0.1"
+                               style="width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; text-align: center;">
+                    </div>
+                    
+                    <div class="total-cell">
+                        <span class="final-price">{{ printf "%.2f" .SubTotal }}</span>
+                    </div>
+                </article>
+                {{ end }}
+            </section>
+
+            <button type="submit" style="margin-top: 20px; padding: 10px 30px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;">
                 Пересчитать
             </button>
         </form>
-
-        <!-- Заголовок таблицы -->
-        <div class="license-table-header">
-            <div class="header-model">Модель лицензирования</div>
-            <div class="header-price">Цена за единицу (руб.)</div>
-            <div class="header-quantity">Коэффициент поддержки</div>
-            <div class="header-total">Итого (руб.)</div>
-        </div>
-        
-        <section class="cart-list">
-            {{ range .services }}
-            <article class="cart-item">
-                <div class="license-model-cell">
-                    <img src="http://localhost:9000/img/{{ .ImageURL }}" alt="{{ .Name }}" class="license-image">
-                    <div class="license-info">
-                        <div class="license-name">{{ .Name }}</div>
-                        <div class="license-desc">{{ .Description }}</div>
-                    </div>
-                </div>
-                
-                <div class="price-cell">
-                    <span class="price-value">{{ printf "%.0f" .BasePrice }}</span>
-                </div>
-                
-                <div class="quantity-cell">
-                    <div style="text-align: center;">
-                        <strong style="font-size: 18px; color: #007bff;">{{ printf "%.2f" $.supportLevel }}</strong>
-                        <div style="font-size: 11px; color: #666; margin-top: 2px;">
-                            {{ if eq .LicenseType "per_user" }}базовый
-                            {{ else if eq .LicenseType "per_core" }}стандарт
-                            {{ else if eq .LicenseType "subscription" }}премиум
-                            {{ else }}обычный{{ end }}
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="total-cell">
-                    <span class="final-price">{{ printf "%.2f" .SubTotal }}</span>
-                </div>
-            </article>
-            {{ end }}
-        </section>
 
         <!-- Итоговая стоимость -->
         <div class="cost-summary">

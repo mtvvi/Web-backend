@@ -125,11 +125,10 @@ func (h *Handler) GetLicenseCalculator(ctx *gin.Context) {
 		return
 	}
 
-	// Параметры берем из заявки (общие для всех услуг)
+	// Параметры берем из заявки (теперь без supportLevel)
 	users := order.Users
 	cores := order.Cores
 	period := order.Period
-	supportLevel := order.SupportLevel
 
 	// Считаем итоговую стоимость
 	var totalCost float64
@@ -140,14 +139,13 @@ func (h *Handler) GetLicenseCalculator(ctx *gin.Context) {
 	count := h.Repository.GetOrderCount(order.ID)
 
 	ctx.HTML(http.StatusOK, "license_calculator.html", gin.H{
-		"services":     services,
-		"count":        count,
-		"orderID":      order.ID,
-		"totalCost":    totalCost,
-		"users":        users,
-		"cores":        cores,
-		"period":       period,
-		"supportLevel": supportLevel,
+		"services":  services,
+		"count":     count,
+		"orderID":   order.ID,
+		"totalCost": totalCost,
+		"users":     users,
+		"cores":     cores,
+		"period":    period,
 	})
 }
 
@@ -221,7 +219,7 @@ func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 		}
 	}
 	if c := ctx.PostForm("cores"); c != "" {
-		if val, err := strconv.Atoi(c); err == nil && val > 0 {
+		if val, err := strconv.Atoi(c); err == nil && val >= 0 {
 			cores = val
 		}
 	}
@@ -231,19 +229,32 @@ func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 		}
 	}
 
-	// Коэффициент поддержки (можно добавить в форму или оставить фиксированным)
-	supportLevel := 1.0
-	if sl := ctx.PostForm("support_level"); sl != "" {
-		if val, err := strconv.ParseFloat(sl, 64); err == nil && val > 0 {
-			supportLevel = val
-		}
-	}
-
-	// Обновляем параметры в заявке (они общие для всех услуг)
-	err = h.Repository.UpdateOrderParams(uint(orderID), users, cores, period, supportLevel)
+	// Обновляем параметры в заявке (общие для всех услуг)
+	err = h.Repository.UpdateOrderParams(uint(orderID), users, cores, period)
 	if err != nil {
 		h.errorHandler(ctx, http.StatusInternalServerError, err)
 		return
+	}
+
+	// Обновляем коэффициенты поддержки для каждой услуги
+	// Получаем список всех услуг в заявке
+	services, err := h.Repository.GetServicesInOrder(uint(orderID))
+	if err == nil {
+		for _, service := range services {
+			// Ищем параметр support_level_<serviceID>
+			formKey := fmt.Sprintf("support_level_%d", service.ID)
+			if slStr := ctx.PostForm(formKey); slStr != "" {
+				if supportLevel, err := strconv.ParseFloat(slStr, 64); err == nil {
+					// service.ID - это ID из license_services
+					// Обновляем коэффициент (валидация 0.7-3.0 внутри метода)
+					logrus.Infof("Updating support level for order=%d, service=%d to %.2f", orderID, service.ID, supportLevel)
+					err := h.Repository.UpdateServiceSupportLevel(uint(orderID), service.ID, supportLevel)
+					if err != nil {
+						logrus.Errorf("Failed to update support level: %v", err)
+					}
+				}
+			}
+		}
 	}
 
 	ctx.Redirect(http.StatusFound, fmt.Sprintf("/license-calculator/%d", orderID))

@@ -15,11 +15,10 @@ func (r *Repository) GetUserByID(id uint) (*ds.User, error) {
 	return &user, nil
 }
 
-func (r *Repository) CreateUser(login, password, email, fullName string, isModerator bool) (*ds.User, error) {
+func (r *Repository) CreateUser(login, password, fullName string, isModerator bool) (*ds.User, error) {
 	user := ds.User{
 		Login:       login,
 		Password:    password,
-		Email:       email,
 		FullName:    fullName,
 		IsModerator: isModerator,
 	}

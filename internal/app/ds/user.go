@@ -6,6 +6,5 @@ type User struct {
 	Login       string `gorm:"type:varchar(50);unique;not null"`
 	Password    string `gorm:"type:varchar(255);not null"`
 	IsModerator bool   `gorm:"type:boolean;default:false;not null"`
-	Email       string `gorm:"type:varchar(100)"`
 	FullName    string `gorm:"type:varchar(100)"`
 }

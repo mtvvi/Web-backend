@@ -11,13 +11,11 @@ type LicenseOrder struct {
 	FormattedAt *time.Time `gorm:"default:null"` // Дата формирования (2 действия создателя)
 	CompletedAt *time.Time `gorm:"default:null"` // Дата завершения (2 действия модератора)
 	ModeratorID *uint      `gorm:"default:null"`
-	CompanyName string     `gorm:"type:varchar(100)"`
 
 	// Параметры расчета (общие для всех услуг в заявке)
-	Users         int     `gorm:"type:int;default:0"`         // Количество пользователей
-	Cores         int     `gorm:"type:int;default:0"`         // Количество CPU ядер
-	Period        int     `gorm:"type:int;default:1"`         // Период лицензии (лет)
-	SupportLevel  float64 `gorm:"type:decimal(3,2);default:1.0"` // Коэффициент поддержки (1.0, 1.3, 1.7)
+	Users  int `gorm:"type:int;default:0"` // Количество пользователей
+	Cores  int `gorm:"type:int;default:0"` // Количество CPU ядер
+	Period int `gorm:"type:int;default:1"` // Период лицензии (лет)
 
 	Creator   User  `gorm:"foreignKey:CreatorID"`
 	Moderator *User `gorm:"foreignKey:ModeratorID"`

@@ -1,10 +1,11 @@
 package ds
 
-// 3. Таблица многие-ко-многим (заявки-услуги) - ТОЛЬКО связь, без данных
+// 3. Таблица многие-ко-многим (заявки-услуги) - ТОЛЬКО связь + индивидуальный коэффициент поддержки
 type OrderService struct {
-	ID        uint `gorm:"primaryKey"`
-	OrderID   uint `gorm:"not null;index"`
-	ServiceID uint `gorm:"not null;index"`
+	ID           uint    `gorm:"primaryKey"`
+	OrderID      uint    `gorm:"not null;index;uniqueIndex:idx_order_service"`
+	ServiceID    uint    `gorm:"not null;index;uniqueIndex:idx_order_service"`
+	SupportLevel float64 `gorm:"type:decimal(4,2);default:1.0"` // Коэффициент поддержки 0.7-3.0
 
 	Order   LicenseOrder   `gorm:"foreignKey:OrderID"`
 	Service LicenseService `gorm:"foreignKey:ServiceID"`
