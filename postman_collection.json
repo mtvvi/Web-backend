@@ -1,0 +1,432 @@
+{
+	"info": {
+		"name": "License Management API - Lab 3",
+		"description": "Коллекция запросов для тестирования веб-сервиса лицензирования ПО",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Услуги (Services)",
+			"item": [
+				{
+					"name": "1.1 GET Список услуг",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/services",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services"]
+						}
+					}
+				},
+				{
+					"name": "1.2 GET Список услуг с фильтром",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/services?query=Server",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services"],
+							"query": [{"key": "query", "value": "Server"}]
+						}
+					}
+				},
+				{
+					"name": "1.3 GET Одна услуга",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/services/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services", "1"]
+						}
+					}
+				},
+				{
+					"name": "1.4 POST Создание услуги",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Adobe Creative Cloud\",\n  \"description\": \"Полный пакет инструментов для творчества\",\n  \"base_price\": 3500.00,\n  \"license_type\": \"subscription\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/services",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services"]
+						}
+					}
+				},
+				{
+					"name": "1.5 POST Добавить изображение к услуге",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "image",
+									"type": "file",
+									"src": "/path/to/your/image.png"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/services/6/image",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services", "6", "image"]
+						}
+					}
+				},
+				{
+					"name": "1.6 PUT Изменение услуги",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"base_price\": 4000.00,\n  \"description\": \"Обновленное описание пакета\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/services/6",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services", "6"]
+						}
+					}
+				},
+				{
+					"name": "1.7 POST Добавить услугу в заявку",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/services/1/add-to-order",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services", "1", "add-to-order"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "2. Заявки (Orders)",
+			"item": [
+				{
+					"name": "2.1 GET Иконка корзины",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/orders/cart",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "orders", "cart"]
+						}
+					}
+				},
+				{
+					"name": "2.2 GET Список заявок",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/orders",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "orders"]
+						}
+					}
+				},
+				{
+					"name": "2.3 GET Список заявок с фильтром по статусу",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/orders?status=сформирован&date_from=2024-01-01&date_to=2025-12-31",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "orders"],
+							"query": [
+								{"key": "status", "value": "сформирован"},
+								{"key": "date_from", "value": "2024-01-01"},
+								{"key": "date_to", "value": "2025-12-31"}
+							]
+						}
+					}
+				},
+				{
+					"name": "2.4 GET Одна заявка (с услугами)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/orders/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "orders", "1"]
+						}
+					}
+				},
+				{
+					"name": "2.5 PUT Изменить поля заявки",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"users\": 15,\n  \"cores\": 8,\n  \"period\": 2\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/orders/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "orders", "1"]
+						}
+					}
+				},
+				{
+					"name": "2.6 PUT Сформировать заявку (с ошибкой)",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/orders/1/format",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "orders", "1", "format"]
+						}
+					}
+				},
+				{
+					"name": "2.7 PUT Завершить заявку",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/orders/2/complete",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "orders", "2", "complete"]
+						}
+					}
+				},
+				{
+					"name": "2.8 DELETE Удалить заявку",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/orders/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "orders", "1"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "3. М-М связь (Order-Services)",
+			"item": [
+				{
+					"name": "3.1 PUT Изменить коэффициент поддержки",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"support_level\": 1.5\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/order-services/1/1",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "order-services", "1", "1"]
+						}
+					}
+				},
+				{
+					"name": "3.2 DELETE Удалить услугу из заявки",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/order-services/1/2",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "order-services", "1", "2"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "4. Пользователи (Users)",
+			"item": [
+				{
+					"name": "4.1 POST Регистрация нового пользователя",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"login\": \"testuser\",\n  \"password\": \"password123\",\n  \"full_name\": \"Тестовый Пользователь\",\n  \"is_moderator\": false\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/users/register",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "users", "register"]
+						}
+					}
+				},
+				{
+					"name": "4.2 GET Профиль пользователя",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/users/profile",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "users", "profile"]
+						}
+					}
+				},
+				{
+					"name": "4.3 PUT Обновить профиль",
+					"request": {
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"full_name\": \"Иван Петрович Иванов\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/users/profile",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "users", "profile"]
+						}
+					}
+				},
+				{
+					"name": "4.4 POST Логин",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"login\": \"creator1\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/users/login",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "users", "login"]
+						}
+					}
+				},
+				{
+					"name": "4.5 POST Выход",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/users/logout",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "users", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "5. Тестовые запросы с ошибками",
+			"item": [
+				{
+					"name": "5.1 GET Несуществующая услуга (404)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/services/999999",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services", "999999"]
+						}
+					}
+				},
+				{
+					"name": "5.2 POST Создание услуги с неверными данными (400)",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test\",\n  \"base_price\": -100,\n  \"license_type\": \"invalid_type\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/services",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services"]
+						}
+					}
+				},
+				{
+					"name": "5.3 DELETE Несуществующая услуга (500)",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/services/999",
+							"protocol": "http",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "services", "999"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

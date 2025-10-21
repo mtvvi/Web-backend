@@ -15,7 +15,7 @@ type LicenseOrder struct {
 	// Параметры расчета (общие для всех услуг в заявке)
 	Users  int `gorm:"type:int;default:0"` // Количество пользователей
 	Cores  int `gorm:"type:int;default:0"` // Количество CPU ядер
-	Period int `gorm:"type:int;default:1"` // Период лицензии (лет)
+	Period int `gorm:"type:int;default:0"` // Период лицензии (лет)
 
 	Creator   User  `gorm:"foreignKey:CreatorID"`
 	Moderator *User `gorm:"foreignKey:ModeratorID"`

@@ -147,7 +147,88 @@ func (r *Repository) AddServiceToOrder(orderID, serviceID uint) error {
 	return r.db.Create(&orderService).Error
 }
 
-// Удалить услугу из заявки
-func (r *Repository) RemoveServiceFromOrder(orderServiceID uint) error {
-	return r.db.Delete(&ds.OrderService{}, orderServiceID).Error
+// Удалить услугу из заявки (по orderID и serviceID, без ID м-м)
+func (r *Repository) RemoveServiceFromOrder(orderID, serviceID uint) error {
+	return r.db.Where("order_id = ? AND service_id = ?", orderID, serviceID).
+		Delete(&ds.OrderService{}).Error
+}
+
+// Создать новую услугу
+func (r *Repository) CreateService(name, description, licenseType string, basePrice float64) (*ds.LicenseService, error) {
+	service := ds.LicenseService{
+		Name:        name,
+		Description: description,
+		BasePrice:   basePrice,
+		LicenseType: licenseType,
+		IsDeleted:   false,
+	}
+	err := r.db.Create(&service).Error
+	if err != nil {
+		return nil, err
+	}
+	return &service, nil
+}
+
+// Обновить услугу
+func (r *Repository) UpdateService(id uint, name, description, licenseType *string, basePrice *float64) error {
+	updates := make(map[string]interface{})
+
+	if name != nil && *name != "" {
+		updates["name"] = *name
+	}
+	if description != nil {
+		updates["description"] = *description
+	}
+	if basePrice != nil && *basePrice > 0 {
+		updates["base_price"] = *basePrice
+	}
+	if licenseType != nil && *licenseType != "" {
+		updates["license_type"] = *licenseType
+	}
+
+	if len(updates) == 0 {
+		return nil // Нечего обновлять
+	}
+
+	return r.db.Model(&ds.LicenseService{}).
+		Where("id = ? AND is_deleted = ?", id, false).
+		Updates(updates).Error
+}
+
+// Логическое удаление услуги
+func (r *Repository) DeleteService(id uint) error {
+	result := r.db.Model(&ds.LicenseService{}).
+		Where("id = ? AND is_deleted = ?", id, false).
+		Update("is_deleted", true)
+
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return errors.New("услуга не найдена или уже удалена")
+	}
+	return nil
+}
+
+// Обновить URL изображения услуги
+func (r *Repository) UpdateServiceImage(id uint, imageURL string) error {
+	return r.db.Model(&ds.LicenseService{}).
+		Where("id = ? AND is_deleted = ?", id, false).
+		Update("image_url", imageURL).Error
+}
+
+// Удалить изображение услуги (установить в NULL)
+func (r *Repository) DeleteServiceImage(id uint) error {
+	return r.db.Model(&ds.LicenseService{}).
+		Where("id = ? AND is_deleted = ?", id, false).
+		Update("image_url", nil).Error
+}
+
+// Проверить существует ли услуга
+func (r *Repository) ServiceExists(id uint) (bool, error) {
+	var count int64
+	err := r.db.Model(&ds.LicenseService{}).
+		Where("id = ? AND is_deleted = ?", id, false).
+		Count(&count).Error
+	return count > 0, err
 }
