@@ -26,12 +26,14 @@ func getCurrentModeratorID() uint {
 type APIHandler struct {
 	Repository  *repository.Repository
 	MinIOClient *storage.MinIOClient
+	AuthHandler *AuthHandler
 }
 
-func NewAPIHandler(r *repository.Repository, minioClient *storage.MinIOClient) *APIHandler {
+func NewAPIHandler(r *repository.Repository, minioClient *storage.MinIOClient, authHandler *AuthHandler) *APIHandler {
 	return &APIHandler{
 		Repository:  r,
 		MinIOClient: minioClient,
+		AuthHandler: authHandler,
 	}
 }
 
@@ -57,7 +59,15 @@ func (h *APIHandler) successResponse(c *gin.Context, statusCode int, message str
 
 // ============ ДОМЕН УСЛУГИ ============
 
-// GET /api/services - Список услуг с фильтрацией
+// GetServices получает список услуг
+// @Summary Получение списка услуг
+// @Description Возвращает список всех услуг с возможностью поиска по названию
+// @Tags Services
+// @Produce json
+// @Param query query string false "Поиск по названию услуги"
+// @Success 200 {object} dto.ServiceListResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/services [get]
 func (h *APIHandler) GetServices(c *gin.Context) {
 	searchQuery := c.Query("query")
 
@@ -97,7 +107,16 @@ func (h *APIHandler) GetServices(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GET /api/services/:id - Одна услуга
+// GetService получает одну услугу
+// @Summary Получение услуги по ID
+// @Description Возвращает детальную информацию об услуге
+// @Tags Services
+// @Produce json
+// @Param id path int true "ID услуги"
+// @Success 200 {object} dto.ServiceResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Router /api/services/{id} [get]
 func (h *APIHandler) GetService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -124,7 +143,18 @@ func (h *APIHandler) GetService(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// POST /api/services - Создание услуги (без изображения)
+// CreateService создает новую услугу
+// @Summary Создание услуги
+// @Description Создает новую услугу (только для модераторов)
+// @Tags Services
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.CreateServiceRequest true "Данные услуги"
+// @Success 201 {object} dto.ServiceResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/services [post]
 func (h *APIHandler) CreateService(c *gin.Context) {
 	var req dto.CreateServiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -151,7 +181,20 @@ func (h *APIHandler) CreateService(c *gin.Context) {
 	c.JSON(http.StatusCreated, response)
 }
 
-// PUT /api/services/:id - Изменение услуги
+// UpdateService обновляет услугу
+// @Summary Обновление услуги
+// @Description Обновляет данные услуги (только для модераторов)
+// @Tags Services
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID услуги"
+// @Param request body dto.UpdateServiceRequest true "Данные для обновления"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/services/{id} [put]
 func (h *APIHandler) UpdateService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -200,7 +243,17 @@ func (h *APIHandler) UpdateService(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Услуга успешно обновлена", nil)
 }
 
-// DELETE /api/services/:id - Удаление услуги
+// DeleteService удаляет услугу
+// @Summary Удаление услуги
+// @Description Удаляет услугу (только для модераторов)
+// @Tags Services
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID услуги"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/services/{id} [delete]
 func (h *APIHandler) DeleteService(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -233,7 +286,18 @@ func (h *APIHandler) DeleteService(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Услуга успешно удалена", nil)
 }
 
-// POST /api/services/:id/add-to-order - Добавление услуги в заявку-черновик
+// AddServiceToOrder добавляет услугу в заявку
+// @Summary Добавление услуги в заявку
+// @Description Добавляет услугу в черновик заявки текущего пользователя
+// @Tags Services
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID услуги"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/services/{id}/add-to-order [post]
 func (h *APIHandler) AddServiceToOrder(c *gin.Context) {
 	userID := getCurrentCreatorID()
 
@@ -276,7 +340,20 @@ func (h *APIHandler) AddServiceToOrder(c *gin.Context) {
 	})
 }
 
-// POST /api/services/:id/image - Добавление изображения (MinIO)
+// UploadServiceImage загружает изображение для услуги
+// @Summary Загрузка изображения услуги
+// @Description Загружает изображение для услуги в MinIO (только для модераторов)
+// @Tags Services
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID услуги"
+// @Param image formData file true "Файл изображения"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/services/{id}/image [post]
 func (h *APIHandler) UploadServiceImage(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -352,7 +429,14 @@ func (h *APIHandler) UploadServiceImage(c *gin.Context) {
 
 // ============ ДОМЕН ЗАЯВКИ ============
 
-// GET /api/orders/cart - Иконка корзины
+// GetCart получает информацию о корзине
+// @Summary Получение информации о корзине
+// @Description Возвращает количество услуг в черновике заявки
+// @Tags Orders
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} dto.CartResponse
+// @Router /api/orders/cart [get]
 func (h *APIHandler) GetCart(c *gin.Context) {
 	userID := getCurrentCreatorID()
 
@@ -374,7 +458,18 @@ func (h *APIHandler) GetCart(c *gin.Context) {
 	})
 }
 
-// GET /api/orders - Список заявок с фильтрацией
+// GetOrders получает список заявок
+// @Summary Получение списка заявок
+// @Description Возвращает список заявок с возможностью фильтрации по статусу и датам
+// @Tags Orders
+// @Produce json
+// @Security BearerAuth
+// @Param status query string false "Фильтр по статусу"
+// @Param date_from query string false "Дата начала (формат: 2006-01-02)"
+// @Param date_to query string false "Дата окончания (формат: 2006-01-02)"
+// @Success 200 {object} dto.OrderListResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/orders [get]
 func (h *APIHandler) GetOrders(c *gin.Context) {
 	status := c.Query("status")
 	dateFromStr := c.Query("date_from")
@@ -436,7 +531,17 @@ func (h *APIHandler) GetOrders(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// GET /api/orders/:id - Одна заявка с услугами
+// GetOrder получает одну заявку
+// @Summary Получение заявки по ID
+// @Description Возвращает детальную информацию о заявке с услугами
+// @Tags Orders
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID заявки"
+// @Success 200 {object} dto.OrderResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 404 {object} dto.ErrorResponse
+// @Router /api/orders/{id} [get]
 func (h *APIHandler) GetOrder(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -494,7 +599,18 @@ func (h *APIHandler) GetOrder(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-// PUT /api/orders/:id - Изменение полей заявки
+// UpdateOrderFields обновляет поля заявки
+// @Summary Обновление полей заявки
+// @Description Обновляет количество пользователей, ядер и период для заявки
+// @Tags Orders
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID заявки"
+// @Param request body dto.UpdateOrderFieldsRequest true "Данные для обновления"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Router /api/orders/{id} [put]
 func (h *APIHandler) UpdateOrderFields(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -519,7 +635,16 @@ func (h *APIHandler) UpdateOrderFields(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Заявка успешно обновлена", nil)
 }
 
-// PUT /api/orders/:id/format - Сформировать заявку
+// FormatOrder формирует заявку
+// @Summary Формирование заявки
+// @Description Переводит заявку из статуса черновик в статус сформирован
+// @Tags Orders
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID заявки"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Router /api/orders/{id}/format [put]
 func (h *APIHandler) FormatOrder(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -538,7 +663,16 @@ func (h *APIHandler) FormatOrder(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Заявка успешно сформирована", nil)
 }
 
-// PUT /api/orders/:id/complete - Завершить заявку (модератором)
+// CompleteOrder завершает заявку
+// @Summary Завершение заявки
+// @Description Завершает заявку модератором
+// @Tags Orders
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID заявки"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Router /api/orders/{id}/complete [put]
 func (h *APIHandler) CompleteOrder(c *gin.Context) {
 	moderatorID := getCurrentModeratorID()
 
@@ -559,7 +693,16 @@ func (h *APIHandler) CompleteOrder(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Заявка успешно завершена", nil)
 }
 
-// PUT /api/orders/:id/reject - Отклонить заявку (модератором)
+// RejectOrder отклоняет заявку
+// @Summary Отклонение заявки
+// @Description Отклоняет заявку модератором
+// @Tags Orders
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID заявки"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Router /api/orders/{id}/reject [put]
 func (h *APIHandler) RejectOrder(c *gin.Context) {
 	moderatorID := getCurrentModeratorID()
 
@@ -580,7 +723,16 @@ func (h *APIHandler) RejectOrder(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Заявка успешно отклонена", nil)
 }
 
-// DELETE /api/orders/:id - Удаление заявки
+// DeleteOrder удаляет заявку
+// @Summary Удаление заявки
+// @Description Удаляет заявку
+// @Tags Orders
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID заявки"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Router /api/orders/{id} [delete]
 func (h *APIHandler) DeleteOrder(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -601,7 +753,18 @@ func (h *APIHandler) DeleteOrder(c *gin.Context) {
 
 // ============ ДОМЕН М-М (Order Services) ============
 
-// DELETE /api/orders/:order_id/services/:service_id - Удалить услугу из заявки
+// RemoveServiceFromOrder удаляет услугу из заявки
+// @Summary Удаление услуги из заявки
+// @Description Удаляет услугу из заявки
+// @Tags Order-Services
+// @Produce json
+// @Security BearerAuth
+// @Param order_id path int true "ID заявки"
+// @Param service_id path int true "ID услуги"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/order-services/{order_id}/{service_id} [delete]
 func (h *APIHandler) RemoveServiceFromOrder(c *gin.Context) {
 	orderIDStr := c.Param("order_id")
 	serviceIDStr := c.Param("service_id")
@@ -624,7 +787,20 @@ func (h *APIHandler) RemoveServiceFromOrder(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Услуга удалена из заявки", nil)
 }
 
-// PUT /api/orders/:order_id/services/:service_id - Изменить коэффициент поддержки
+// UpdateOrderService обновляет коэффициент поддержки
+// @Summary Обновление коэффициента поддержки
+// @Description Изменяет коэффициент поддержки для услуги в заявке
+// @Tags Order-Services
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param order_id path int true "ID заявки"
+// @Param service_id path int true "ID услуги"
+// @Param request body dto.UpdateOrderServiceRequest true "Данные для обновления"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/order-services/{order_id}/{service_id} [put]
 func (h *APIHandler) UpdateOrderService(c *gin.Context) {
 	orderIDStr := c.Param("order_id")
 	serviceIDStr := c.Param("service_id")
@@ -653,62 +829,18 @@ func (h *APIHandler) UpdateOrderService(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Коэффициент поддержки обновлен", nil)
 }
 
-// ============ ДОМЕН ПОЛЬЗОВАТЕЛИ ============
-
-// POST /api/users/register - Регистрация
-func (h *APIHandler) RegisterUser(c *gin.Context) {
-	var req dto.RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		h.errorResponse(c, http.StatusBadRequest, "Неверные данные: "+err.Error())
-		return
-	}
-
-	// Проверяем существует ли пользователь
-	exists, _ := h.Repository.UserExistsByLogin(req.Login)
-	if exists {
-		h.errorResponse(c, http.StatusBadRequest, "Пользователь с таким логином уже существует")
-		return
-	}
-
-	user, err := h.Repository.CreateUser(req.Login, req.Password, req.FullName, req.IsModerator)
-	if err != nil {
-		logrus.Error("Error creating user: ", err)
-		h.errorResponse(c, http.StatusInternalServerError, "Ошибка регистрации пользователя")
-		return
-	}
-
-	response := dto.UserResponse{
-		ID:          user.ID,
-		Login:       user.Login,
-		FullName:    user.FullName,
-		IsModerator: user.IsModerator,
-	}
-
-	c.JSON(http.StatusCreated, response)
-}
-
-// GET /api/users/profile - Получить профиль текущего пользователя
-func (h *APIHandler) GetProfile(c *gin.Context) {
-	userID := getCurrentCreatorID()
-
-	// Получаем полные данные из БД
-	dbUser, err := h.Repository.GetUserByID(userID)
-	if err != nil {
-		h.errorResponse(c, http.StatusNotFound, "Пользователь не найден")
-		return
-	}
-
-	response := dto.UserResponse{
-		ID:          dbUser.ID,
-		Login:       dbUser.Login,
-		FullName:    dbUser.FullName,
-		IsModerator: dbUser.IsModerator,
-	}
-
-	c.JSON(http.StatusOK, response)
-}
-
-// PUT /api/users/profile - Обновить профиль
+// UpdateProfile обновляет профиль пользователя
+// @Summary Обновление профиля
+// @Description Обновляет данные профиля пользователя
+// @Tags Authentication
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body dto.UpdateUserRequest true "Данные для обновления"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 500 {object} dto.ErrorResponse
+// @Router /api/auth/profile [put]
 func (h *APIHandler) UpdateProfile(c *gin.Context) {
 	userID := getCurrentCreatorID()
 
@@ -734,37 +866,4 @@ func (h *APIHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	h.successResponse(c, http.StatusOK, "Профиль успешно обновлен", nil)
-}
-
-// POST /api/users/login - Аутентификация (заглушка)
-func (h *APIHandler) Login(c *gin.Context) {
-	var req dto.LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		h.errorResponse(c, http.StatusBadRequest, "Неверные данные: "+err.Error())
-		return
-	}
-
-	// Простая проверка (в реальности нужна хеширование пароля)
-	user, err := h.Repository.GetUserByLogin(req.Login)
-	if err != nil || user.Password != req.Password {
-		h.errorResponse(c, http.StatusUnauthorized, "Неверный логин или пароль")
-		return
-	}
-
-	response := dto.LoginResponse{
-		Token: "mock_token_" + user.Login, // Заглушка токена
-		User: dto.UserResponse{
-			ID:          user.ID,
-			Login:       user.Login,
-			FullName:    user.FullName,
-			IsModerator: user.IsModerator,
-		},
-	}
-
-	c.JSON(http.StatusOK, response)
-}
-
-// POST /api/users/logout - Деавторизация (заглушка)
-func (h *APIHandler) Logout(c *gin.Context) {
-	h.successResponse(c, http.StatusOK, "Выход выполнен успешно", nil)
 }

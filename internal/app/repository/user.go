@@ -15,12 +15,18 @@ func (r *Repository) GetUserByID(id uint) (*ds.User, error) {
 	return &user, nil
 }
 
-func (r *Repository) CreateUser(login, password, fullName string, isModerator bool) (*ds.User, error) {
+func (r *Repository) CreateUser(login, password, fullName string, role int) (*ds.User, error) {
+	// Если роль не указана или некорректна, устанавливаем Buyer (0)
+	if role < 0 || role > 2 {
+		role = 0
+	}
+
 	user := ds.User{
 		Login:       login,
 		Password:    password,
 		FullName:    fullName,
-		IsModerator: isModerator,
+		Role:        role,
+		IsModerator: role == 2, // Совместимость: admin = moderator
 	}
 
 	err := r.db.Create(&user).Error
@@ -35,6 +41,16 @@ func (r *Repository) CreateUser(login, password, fullName string, isModerator bo
 func (r *Repository) GetUserByLogin(login string) (*ds.User, error) {
 	var user ds.User
 	err := r.db.Where("login = ?", login).First(&user).Error
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// Получить пользователя по UUID
+func (r *Repository) GetUserByUUID(uuid string) (*ds.User, error) {
+	var user ds.User
+	err := r.db.Where("uuid = ?", uuid).First(&user).Error
 	if err != nil {
 		return nil, err
 	}

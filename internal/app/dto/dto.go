@@ -112,7 +112,8 @@ type RegisterRequest struct {
 	Login       string `json:"login" binding:"required,min=3,max=50"`
 	Password    string `json:"password" binding:"required,min=6"`
 	FullName    string `json:"full_name" binding:"required"`
-	IsModerator bool   `json:"is_moderator"`
+	Role        int    `json:"role"`         // 0 = Buyer, 1 = Manager, 2 = Admin
+	IsModerator bool   `json:"is_moderator"` // Deprecated, используется Role
 }
 
 type UpdateUserRequest struct {

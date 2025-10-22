@@ -1,0 +1,1421 @@
+basePath: /
+definitions:
+  dto.BuildingTypeRequest:
+    properties:
+      base_cost_m2:
+        type: number
+      base_cost_m3:
+        type: number
+      building_name:
+        type: string
+      description:
+        type: string
+    required:
+    - base_cost_m2
+    - base_cost_m3
+    - building_name
+    type: object
+  dto.BuildingTypeResponse:
+    properties:
+      base_cost_m2:
+        type: number
+      base_cost_m3:
+        type: number
+      building_name:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+    type: object
+  dto.CartResponse:
+    properties:
+      order_id:
+        description: ID черновика заявки
+        type: integer
+      service_count:
+        description: Количество услуг в корзине
+        type: integer
+    type: object
+  dto.CreateServiceRequest:
+    properties:
+      base_price:
+        type: number
+      description:
+        type: string
+      license_type:
+        enum:
+        - per_user
+        - per_core
+        - subscription
+        type: string
+      name:
+        type: string
+    required:
+    - base_price
+    - license_type
+    - name
+    type: object
+  dto.ErrorResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.EstimateRequest:
+    properties:
+      estimate_description:
+        type: string
+    type: object
+  dto.EstimateResponse:
+    properties:
+      creator_login:
+        type: string
+      date_created:
+        type: string
+      estimate_description:
+        type: string
+      estimate_status:
+        type: string
+      id:
+        type: integer
+      moderator_login:
+        type: string
+      result:
+        type: number
+    type: object
+  dto.FormEstimateRequest:
+    properties:
+      estimate_description:
+        type: string
+    type: object
+  dto.LoginRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  dto.OrderListResponse:
+    properties:
+      orders:
+        items:
+          $ref: '#/definitions/dto.OrderResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.OrderResponse:
+    properties:
+      completed_at:
+        type: string
+      cores:
+        type: integer
+      created_at:
+        type: string
+      creator:
+        description: Логин создателя
+        type: string
+      formatted_at:
+        type: string
+      id:
+        type: integer
+      moderator:
+        description: Логин модератора (если есть)
+        type: string
+      period:
+        type: integer
+      services:
+        description: Только для GET одной заявки
+        items:
+          $ref: '#/definitions/dto.ServiceInOrderResp'
+        type: array
+      status:
+        type: string
+      total_cost:
+        type: number
+      users:
+        type: integer
+    type: object
+  dto.RegisterRequest:
+    properties:
+      full_name:
+        type: string
+      is_moderator:
+        type: boolean
+      login:
+        maxLength: 50
+        minLength: 3
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - full_name
+    - login
+    - password
+    type: object
+  dto.ServiceInOrderResp:
+    properties:
+      base_price:
+        type: number
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      license_type:
+        type: string
+      name:
+        type: string
+      subtotal:
+        type: number
+      support_level:
+        type: number
+    type: object
+  dto.ServiceListResponse:
+    properties:
+      services:
+        items:
+          $ref: '#/definitions/dto.ServiceResponse'
+        type: array
+      total:
+        type: integer
+    type: object
+  dto.ServiceResponse:
+    properties:
+      base_price:
+        type: number
+      description:
+        type: string
+      id:
+        type: integer
+      image_url:
+        type: string
+      license_type:
+        description: per_user, per_core, subscription
+        type: string
+      name:
+        type: string
+    type: object
+  dto.SuccessResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.UpdateOrderFieldsRequest:
+    properties:
+      core_count:
+        minimum: 0
+        type: integer
+      period:
+        minimum: 1
+        type: integer
+      user_count:
+        minimum: 0
+        type: integer
+    type: object
+  dto.UpdateOrderServiceRequest:
+    properties:
+      support_level:
+        maximum: 3
+        minimum: 0.7
+        type: number
+    required:
+    - support_level
+    type: object
+  dto.UpdateServiceRequest:
+    properties:
+      base_price:
+        type: number
+      description:
+        type: string
+      license_type:
+        enum:
+        - per_user
+        - per_core
+        - subscription
+        type: string
+      name:
+        type: string
+    type: object
+  dto.UpdateUserRequest:
+    properties:
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    type: object
+  dto.UserLoginRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  dto.UserProfileResponse:
+    properties:
+      id:
+        type: integer
+      login:
+        type: string
+      role:
+        type: string
+    type: object
+  dto.UserRegisterRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    required:
+    - login
+    - password
+    type: object
+  dto.UserRequest:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    required:
+    - login
+    - password
+    type: object
+host: 127.0.0.1:8080
+info:
+  contact:
+    email: support@license-calculator.ru
+    name: API Support
+  description: Система расчета стоимости лицензирования программного обеспечения
+  license:
+    name: AS IS (NO WARRANTY)
+  title: License Calculator API
+  version: "1.0"
+paths:
+  /api/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Аутентификация пользователя с возвратом JWT токена
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Вход в систему
+      tags:
+      - Authentication
+  /api/auth/logout:
+    post:
+      description: Завершение сеанса пользователя с добавлением токена в blacklist
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Выход из системы
+      tags:
+      - Authentication
+  /api/auth/profile:
+    get:
+      description: Возвращает информацию о текущем пользователе
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Получение профиля пользователя
+      tags:
+      - Authentication
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные профиля пользователя
+      parameters:
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление профиля
+      tags:
+      - Authentication
+  /api/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создание нового пользователя в системе
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Регистрация пользователя
+      tags:
+      - Authentication
+  /api/auth/session-login:
+    post:
+      consumes:
+      - application/json
+      description: Аутентификация пользователя с созданием сессии и куки
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Вход в систему (сессии)
+      tags:
+      - Authentication
+  /api/auth/session-logout:
+    post:
+      description: Завершение сеанса пользователя и удаление сессии
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Выход из системы (сессии)
+      tags:
+      - Authentication
+  /api/building-types:
+    get:
+      description: Возвращает список типов зданий с возможностью поиска (публичный
+        доступ)
+      parameters:
+      - description: Поисковый запрос
+        in: query
+        name: searchedBuilding
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.BuildingTypeResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получение типов зданий
+      tags:
+      - BuildingTypes
+    post:
+      consumes:
+      - application/json
+      description: Создает новый тип здания (доступно только модераторам)
+      parameters:
+      - description: Данные типа здания
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.BuildingTypeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.BuildingTypeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Создание типа здания
+      tags:
+      - BuildingTypes
+  /api/building-types/{id}:
+    get:
+      description: Возвращает детальную информацию о типе здания (публичный доступ)
+      parameters:
+      - description: ID типа здания
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.BuildingTypeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Получение типа здания
+      tags:
+      - BuildingTypes
+  /api/estimates:
+    get:
+      description: |-
+        Возвращает список заявок с фильтрацией по ролям (пользователь видит только свои, модератор - все)
+        Возвращает список заявок: для пользователей - только свои, для модераторов - все
+      parameters:
+      - description: Статус заявки
+        in: query
+        name: status
+        type: string
+      - description: Дата начала (YYYY-MM-DD)
+        in: query
+        name: date_from
+        type: string
+      - description: Дата окончания (YYYY-MM-DD)
+        in: query
+        name: date_to
+        type: string
+      - description: Фильтр по статусу (draft, formed, finished, rejected, deleted)
+        in: query
+        name: status
+        type: string
+      - description: 'Начальная дата фильтра (формат: 2006-01-02)'
+        in: query
+        name: date_from
+        type: string
+      - description: 'Конечная дата фильтра (формат: 2006-01-02)'
+        in: query
+        name: date_to
+        type: string
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/dto.EstimateResponse'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      - ApiKeyAuth: []
+      summary: Получение списка заявок
+      tags:
+      - Estimates
+      - Estimates
+  /api/estimates/{id}:
+    delete:
+      description: Помечает заявку как удаленную (только для черновиков)
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Удаление заявки
+      tags:
+      - Estimates
+    get:
+      description: Возвращает детальную информацию о заявке
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EstimateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Получение заявки по ID
+      tags:
+      - Estimates
+    put:
+      consumes:
+      - application/json
+      description: Позволяет обновить описание заявки в статусе draft
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.EstimateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EstimateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Обновление описания заявки
+      tags:
+      - Estimates
+  /api/estimates/{id}/form:
+    put:
+      consumes:
+      - application/json
+      description: Переводит заявку из статуса draft в formed
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Описание заявки
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.FormEstimateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EstimateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Формирование заявки
+      tags:
+      - Estimates
+  /api/estimates/{id}/resolve:
+    put:
+      consumes:
+      - application/json
+      description: Модератор может завершить заявку (finished) или отклонить (rejected)
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Действие (finished/rejected)
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            actionOnEstimate:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.EstimateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Завершение заявки модератором
+      tags:
+      - Estimates
+  /api/estimates/draft/info:
+    get:
+      description: Возвращает информацию о черновой заявке пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Получение черновой заявки
+      tags:
+      - Estimates
+  /api/order-services/{order_id}/{service_id}:
+    delete:
+      description: Удаляет услугу из заявки
+      parameters:
+      - description: ID заявки
+        in: path
+        name: order_id
+        required: true
+        type: integer
+      - description: ID услуги
+        in: path
+        name: service_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление услуги из заявки
+      tags:
+      - Order-Services
+    put:
+      consumes:
+      - application/json
+      description: Изменяет коэффициент поддержки для услуги в заявке
+      parameters:
+      - description: ID заявки
+        in: path
+        name: order_id
+        required: true
+        type: integer
+      - description: ID услуги
+        in: path
+        name: service_id
+        required: true
+        type: integer
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateOrderServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление коэффициента поддержки
+      tags:
+      - Order-Services
+  /api/orders:
+    get:
+      description: Возвращает список заявок с возможностью фильтрации по статусу и
+        датам
+      parameters:
+      - description: Фильтр по статусу
+        in: query
+        name: status
+        type: string
+      - description: 'Дата начала (формат: 2006-01-02)'
+        in: query
+        name: date_from
+        type: string
+      - description: 'Дата окончания (формат: 2006-01-02)'
+        in: query
+        name: date_to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получение списка заявок
+      tags:
+      - Orders
+  /api/orders/{id}:
+    delete:
+      description: Удаляет заявку
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление заявки
+      tags:
+      - Orders
+    get:
+      description: Возвращает детальную информацию о заявке с услугами
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Получение заявки по ID
+      tags:
+      - Orders
+    put:
+      consumes:
+      - application/json
+      description: Обновляет количество пользователей, ядер и период для заявки
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateOrderFieldsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление полей заявки
+      tags:
+      - Orders
+  /api/orders/{id}/complete:
+    put:
+      description: Завершает заявку модератором
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Завершение заявки
+      tags:
+      - Orders
+  /api/orders/{id}/format:
+    put:
+      description: Переводит заявку из статуса черновик в статус сформирован
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Формирование заявки
+      tags:
+      - Orders
+  /api/orders/{id}/reject:
+    put:
+      description: Отклоняет заявку модератором
+      parameters:
+      - description: ID заявки
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Отклонение заявки
+      tags:
+      - Orders
+  /api/orders/cart:
+    get:
+      description: Возвращает количество услуг в черновике заявки
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.CartResponse'
+      security:
+      - BearerAuth: []
+      summary: Получение информации о корзине
+      tags:
+      - Orders
+  /api/services:
+    get:
+      description: Возвращает список всех услуг с возможностью поиска по названию
+      parameters:
+      - description: Поиск по названию услуги
+        in: query
+        name: query
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ServiceListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получение списка услуг
+      tags:
+      - Services
+    post:
+      consumes:
+      - application/json
+      description: Создает новую услугу (только для модераторов)
+      parameters:
+      - description: Данные услуги
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/dto.ServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Создание услуги
+      tags:
+      - Services
+  /api/services/{id}:
+    delete:
+      description: Удаляет услугу (только для модераторов)
+      parameters:
+      - description: ID услуги
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Удаление услуги
+      tags:
+      - Services
+    get:
+      description: Возвращает детальную информацию об услуге
+      parameters:
+      - description: ID услуги
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.ServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      summary: Получение услуги по ID
+      tags:
+      - Services
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные услуги (только для модераторов)
+      parameters:
+      - description: ID услуги
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Данные для обновления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Обновление услуги
+      tags:
+      - Services
+  /api/services/{id}/add-to-order:
+    post:
+      description: Добавляет услугу в черновик заявки текущего пользователя
+      parameters:
+      - description: ID услуги
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Добавление услуги в заявку
+      tags:
+      - Services
+  /api/services/{id}/image:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загружает изображение для услуги в MinIO (только для модераторов)
+      parameters:
+      - description: ID услуги
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Файл изображения
+        in: formData
+        name: image
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/dto.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Загрузка изображения услуги
+      tags:
+      - Services
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Аутентификация пользователя с возвратом JWT токена
+      parameters:
+      - description: Данные для входа
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UserLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Вход в систему
+      tags:
+      - Authentication
+  /ping:
+    get:
+      description: Возвращает простой ответ для проверки работы сервера
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Проверка работоспособности
+      tags:
+      - Health
+securityDefinitions:
+  BearerAuth:
+    description: Введите JWT токен (с префиксом 'Bearer ' или без него)
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
