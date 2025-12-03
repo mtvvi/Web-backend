@@ -143,14 +143,27 @@ func (r *Repository) AddServiceToOrder(orderID, serviceID uint) error {
 		OrderID:      orderID,
 		ServiceID:    serviceID,
 		SupportLevel: 1.0, // По умолчанию
+		SubTotal:     0,   // Будет пересчитано
 	}
-	return r.db.Create(&orderService).Error
+	err = r.db.Create(&orderService).Error
+	if err != nil {
+		return err
+	}
+
+	// Пересчитываем стоимости после добавления услуги
+	return r.RecalculateOrderCosts(orderID)
 }
 
 // Удалить услугу из заявки (по orderID и serviceID, без ID м-м)
 func (r *Repository) RemoveServiceFromOrder(orderID, serviceID uint) error {
-	return r.db.Where("order_id = ? AND service_id = ?", orderID, serviceID).
+	err := r.db.Where("order_id = ? AND service_id = ?", orderID, serviceID).
 		Delete(&ds.OrderService{}).Error
+	if err != nil {
+		return err
+	}
+
+	// Пересчитываем стоимости после удаления услуги
+	return r.RecalculateOrderCosts(orderID)
 }
 
 // Создать новую услугу

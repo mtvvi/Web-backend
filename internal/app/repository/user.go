@@ -47,16 +47,6 @@ func (r *Repository) GetUserByLogin(login string) (*ds.User, error) {
 	return &user, nil
 }
 
-// Получить пользователя по UUID
-func (r *Repository) GetUserByUUID(uuid string) (*ds.User, error) {
-	var user ds.User
-	err := r.db.Where("uuid = ?", uuid).First(&user).Error
-	if err != nil {
-		return nil, err
-	}
-	return &user, nil
-}
-
 // Обновить профиль пользователя
 func (r *Repository) UpdateUser(id uint, fullName, password *string) error {
 	updates := make(map[string]interface{})

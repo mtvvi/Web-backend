@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -17,7 +18,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -84,7 +84,6 @@ func (h *AuthHandler) RegisterUser(ctx *gin.Context) {
 	}
 
 	// Генерируем JWT токен сразу при регистрации
-	userUUID := uuid.New()
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, ds.JWTClaims{
 		StandardClaims: jwt.StandardClaims{
@@ -92,8 +91,8 @@ func (h *AuthHandler) RegisterUser(ctx *gin.Context) {
 			IssuedAt:  now.Unix(),
 			Issuer:    "license-calculator",
 		},
-		UserUUID: userUUID,
-		Role:     role.Role(user.Role),
+		UserID: user.ID,
+		Role:   role.Role(user.Role),
 	})
 
 	accessToken, err := token.SignedString([]byte(h.Config.JWT.Token))
@@ -148,9 +147,6 @@ func (h *AuthHandler) LoginUser(ctx *gin.Context) {
 	// Берём роль из базы данных
 	userRole := role.Role(user.Role)
 
-	// Генерируем UUID для пользователя (можно использовать ID из БД)
-	userUUID := uuid.New()
-
 	// Создание JWT токена
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, ds.JWTClaims{
@@ -159,8 +155,8 @@ func (h *AuthHandler) LoginUser(ctx *gin.Context) {
 			IssuedAt:  now.Unix(),
 			Issuer:    "license-calculator",
 		},
-		UserUUID: userUUID,
-		Role:     userRole,
+		UserID: user.ID,
+		Role:   userRole,
 	})
 
 	// Подписываем токен
@@ -173,7 +169,6 @@ func (h *AuthHandler) LoginUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"status":     "success",
 		"message":    "пользователь успешно авторизован",
-		"user_uuid":  userUUID.String(),
 		"user_id":    user.ID,
 		"role":       int(userRole),
 		"token":      accessToken,
@@ -280,9 +275,6 @@ func (h *AuthHandler) SessionLoginUser(ctx *gin.Context) {
 		userRole = role.Admin
 	}
 
-	// Генерируем UUID для сессии
-	userUUID := uuid.New()
-
 	// Создание JWT токена для сессии
 	now := time.Now()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, ds.JWTClaims{
@@ -291,8 +283,8 @@ func (h *AuthHandler) SessionLoginUser(ctx *gin.Context) {
 			IssuedAt:  now.Unix(),
 			Issuer:    "license-calculator",
 		},
-		UserUUID: userUUID,
-		Role:     userRole,
+		UserID: user.ID,
+		Role:   userRole,
 	})
 
 	accessToken, err := token.SignedString([]byte(h.Config.JWT.Token))
@@ -302,7 +294,7 @@ func (h *AuthHandler) SessionLoginUser(ctx *gin.Context) {
 	}
 
 	// Сохраняем сессию в Redis
-	sessionKey := "session:" + userUUID.String()
+	sessionKey := fmt.Sprintf("session:%d", user.ID)
 	err = h.RedisClient.WriteJWTToBlacklist(ctx.Request.Context(), sessionKey, 24*time.Hour)
 	if err != nil {
 		h.errorHandler(ctx, http.StatusInternalServerError, err)
@@ -310,18 +302,17 @@ func (h *AuthHandler) SessionLoginUser(ctx *gin.Context) {
 	}
 
 	// Устанавливаем куки
-	ctx.SetCookie("session_id", userUUID.String(), 86400, "/", "", false, true) // HttpOnly cookie
-	ctx.SetCookie("auth_token", accessToken, 86400, "/", "", false, false)      // обычный cookie для фронтенда
-	ctx.SetCookie("user_id", string(rune(user.ID)), 86400, "/", "", false, false)
+	ctx.SetCookie("session_id", fmt.Sprintf("%d", user.ID), 86400, "/", "", false, true) // HttpOnly cookie
+	ctx.SetCookie("auth_token", accessToken, 86400, "/", "", false, false)               // обычный cookie для фронтенда
+	ctx.SetCookie("user_id", fmt.Sprintf("%d", user.ID), 86400, "/", "", false, false)
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"status":     "success",
 		"message":    "пользователь успешно авторизован (сессия)",
-		"user_uuid":  userUUID.String(),
 		"user_id":    user.ID,
 		"role":       int(userRole),
 		"login":      user.Login,
-		"session_id": userUUID.String(),
+		"session_id": fmt.Sprintf("%d", user.ID),
 	})
 }
 
@@ -370,7 +361,7 @@ func (h *AuthHandler) SessionLogoutUser(ctx *gin.Context) {
 // @Router /api/auth/profile [get]
 func (h *AuthHandler) GetUserProfile(ctx *gin.Context) {
 	// Получаем ID пользователя из контекста (установлен middleware)
-	userUUID, exists := ctx.Get("userUUID")
+	userID, exists := ctx.Get("userID")
 	if !exists {
 		h.errorHandler(ctx, http.StatusUnauthorized, errors.New("пользователь не авторизован"))
 		return
@@ -383,11 +374,20 @@ func (h *AuthHandler) GetUserProfile(ctx *gin.Context) {
 		return
 	}
 
+	// Получаем пользователя из БД для полной информации
+	user, err := h.Repository.GetUserByID(userID.(uint))
+	if err != nil {
+		h.errorHandler(ctx, http.StatusNotFound, errors.New("пользователь не найден"))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"status": "success",
 		"user": gin.H{
-			"uuid": userUUID,
-			"role": userRole,
+			"id":        user.ID,
+			"login":     user.Login,
+			"full_name": user.FullName,
+			"role":      userRole,
 		},
 	})
 }

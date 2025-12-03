@@ -13,12 +13,12 @@
     <div class="cart-header">
         {{ if gt .draftOrderID 0 }}
         <a href="/license-calculator/{{ .draftOrderID }}" class="cart">
-            <img src="http://localhost:9000/img/cart.png" alt="Корзина">
+            <img src="https://localhost:9000/img/cart.png" alt="Корзина">
             <div class="cart-count">{{ .cartCount }}</div>
         </a>
         {{ else }}
         <div class="cart" style="opacity: 0.5; cursor: not-allowed;">
-            <img src="http://localhost:9000/img/cart.png" alt="Корзина">
+            <img src="https://localhost:9000/img/cart.png" alt="Корзина">
             <div class="cart-count">0</div>
         </div>
         {{ end }}
@@ -38,7 +38,7 @@
             {{ range .models }}
             <div class="card">
                 <div class="card-icon">
-                    <img src="http://localhost:9000/license-images/{{ .ImageURL }}" alt="{{ .Name }}">
+                    <img src="https://localhost:9000/license-images/{{ .ImageURL }}" alt="{{ .Name }}">
                 </div>
                 <div class="card-title">{{ .Name }}</div>
                 <div class="card-desc">{{ .Description }}</div>

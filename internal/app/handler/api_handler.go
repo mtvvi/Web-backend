@@ -3,7 +3,9 @@ package handler
 import (
 	"backend/internal/app/dto"
 	"backend/internal/app/repository"
+	"backend/internal/app/role"
 	"backend/internal/app/storage"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -12,15 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
-
-// Простые функции для получения текущего пользователя (singleton)
-func getCurrentCreatorID() uint {
-	return 1
-}
-
-func getCurrentModeratorID() uint {
-	return 2
-}
 
 // APIHandler содержит обработчики для REST API
 type APIHandler struct {
@@ -35,6 +28,27 @@ func NewAPIHandler(r *repository.Repository, minioClient *storage.MinIOClient, a
 		MinIOClient: minioClient,
 		AuthHandler: authHandler,
 	}
+}
+
+// Получение текущего пользователя из контекста
+func (h *APIHandler) getUserFromContext(c *gin.Context) (uint, role.Role, error) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		logrus.Warn("userID not found in context")
+		return 0, role.Buyer, fmt.Errorf("user not authenticated")
+	}
+
+	userRole, _ := c.Get("userRole")
+	r, _ := userRole.(role.Role)
+
+	id, ok := userID.(uint)
+	if !ok {
+		logrus.Errorf("getUserFromContext: invalid userID type: %T", userID)
+		return 0, r, fmt.Errorf("invalid user ID")
+	}
+
+	logrus.Infof("getUserFromContext: userID=%d, role=%v", id, r)
+	return id, r, nil
 }
 
 // ============ Вспомогательные функции ============
@@ -299,7 +313,11 @@ func (h *APIHandler) DeleteService(c *gin.Context) {
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /api/services/{id}/add-to-order [post]
 func (h *APIHandler) AddServiceToOrder(c *gin.Context) {
-	userID := getCurrentCreatorID()
+	userID, _, err := h.getUserFromContext(c)
+	if err != nil || userID == 0 {
+		h.errorResponse(c, http.StatusUnauthorized, "Ошибка авторизации")
+		return
+	}
 
 	idStr := c.Param("id")
 	serviceID, err := strconv.ParseUint(idStr, 10, 32)
@@ -438,7 +456,15 @@ func (h *APIHandler) UploadServiceImage(c *gin.Context) {
 // @Success 200 {object} dto.CartResponse
 // @Router /api/orders/cart [get]
 func (h *APIHandler) GetCart(c *gin.Context) {
-	userID := getCurrentCreatorID()
+	userID, _, err := h.getUserFromContext(c)
+	if err != nil || userID == 0 {
+		// Нет авторизации - возвращаем пустую корзину
+		c.JSON(http.StatusOK, dto.CartResponse{
+			OrderID:      0,
+			ServiceCount: 0,
+		})
+		return
+	}
 
 	order, err := h.Repository.GetDraftOrder(userID)
 	if err != nil {
@@ -489,7 +515,21 @@ func (h *APIHandler) GetOrders(c *gin.Context) {
 		}
 	}
 
-	orders, err := h.Repository.GetOrders(status, dateFrom, dateTo)
+	// Получаем текущего пользователя и его роль
+	userID, userRole, err := h.getUserFromContext(c)
+	if err != nil {
+		logrus.Error("Error getting user from context: ", err)
+		h.errorResponse(c, http.StatusUnauthorized, "Ошибка авторизации")
+		return
+	}
+
+	// Если пользователь - обычный Buyer, показываем только его заявки
+	var creatorID *uint
+	if userRole == role.Buyer {
+		creatorID = &userID
+	}
+
+	orders, err := h.Repository.GetOrders(status, dateFrom, dateTo, creatorID)
 	if err != nil {
 		logrus.Error("Error getting orders: ", err)
 		h.errorResponse(c, http.StatusInternalServerError, "Ошибка получения заявок")
@@ -520,6 +560,7 @@ func (h *APIHandler) GetOrders(c *gin.Context) {
 			Users:       o.Users,
 			Cores:       o.Cores,
 			Period:      o.Period,
+			TotalCost:   o.TotalCost,
 		}
 	}
 
@@ -674,7 +715,11 @@ func (h *APIHandler) FormatOrder(c *gin.Context) {
 // @Failure 400 {object} dto.ErrorResponse
 // @Router /api/orders/{id}/complete [put]
 func (h *APIHandler) CompleteOrder(c *gin.Context) {
-	moderatorID := getCurrentModeratorID()
+	moderatorID, _, err := h.getUserFromContext(c)
+	if err != nil || moderatorID == 0 {
+		h.errorResponse(c, http.StatusUnauthorized, "Ошибка авторизации")
+		return
+	}
 
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -704,7 +749,11 @@ func (h *APIHandler) CompleteOrder(c *gin.Context) {
 // @Failure 400 {object} dto.ErrorResponse
 // @Router /api/orders/{id}/reject [put]
 func (h *APIHandler) RejectOrder(c *gin.Context) {
-	moderatorID := getCurrentModeratorID()
+	moderatorID, _, err := h.getUserFromContext(c)
+	if err != nil || moderatorID == 0 {
+		h.errorResponse(c, http.StatusUnauthorized, "Ошибка авторизации")
+		return
+	}
 
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -842,7 +891,11 @@ func (h *APIHandler) UpdateOrderService(c *gin.Context) {
 // @Failure 500 {object} dto.ErrorResponse
 // @Router /api/auth/profile [put]
 func (h *APIHandler) UpdateProfile(c *gin.Context) {
-	userID := getCurrentCreatorID()
+	userID, _, err := h.getUserFromContext(c)
+	if err != nil || userID == 0 {
+		h.errorResponse(c, http.StatusUnauthorized, "Ошибка авторизации")
+		return
+	}
 
 	var req dto.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -858,7 +911,7 @@ func (h *APIHandler) UpdateProfile(c *gin.Context) {
 		password = &req.Password
 	}
 
-	err := h.Repository.UpdateUser(userID, fullName, password)
+	err = h.Repository.UpdateUser(userID, fullName, password)
 	if err != nil {
 		logrus.Error("Error updating user: ", err)
 		h.errorResponse(c, http.StatusInternalServerError, "Ошибка обновления профиля")

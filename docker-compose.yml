@@ -31,6 +31,8 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+    networks:
+      - license-network
 
   minio1:
     <<: *minio-common
@@ -38,6 +40,8 @@ services:
     volumes:
       - data1-1:/data1
       - data1-2:/data2
+    networks:
+      - license-network
 
   minio2:
     <<: *minio-common
@@ -45,6 +49,8 @@ services:
     volumes:
       - data2-1:/data1
       - data2-2:/data2
+    networks:
+      - license-network
 
   minio3:
     <<: *minio-common
@@ -52,6 +58,8 @@ services:
     volumes:
       - data3-1:/data1
       - data3-2:/data2
+    networks:
+      - license-network
 
   minio4:
     <<: *minio-common
@@ -59,6 +67,8 @@ services:
     volumes:
       - data4-1:/data1
       - data4-2:/data2
+    networks:
+      - license-network
 
   nginx:
     image: nginx:1.19.2-alpine
@@ -73,6 +83,8 @@ services:
       - minio2
       - minio3
       - minio4
+    networks:
+      - license-network
 
   # PostgreSQL база данных
   postgres:
@@ -85,6 +97,8 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - license-network
 
   # Adminer для управления БД
   adminer:
@@ -93,6 +107,8 @@ services:
       - "8081:8080"
     depends_on:
       - postgres
+    networks:
+      - license-network
 
 volumes:
   data1-1:
@@ -105,3 +121,7 @@ volumes:
   data4-2:
   postgres_data:
   redis_data:
+
+networks:
+  license-network:
+    driver: bridge

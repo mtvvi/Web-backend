@@ -65,7 +65,7 @@ func (am *AuthMiddleware) WithAuthCheck(assignedRoles ...role.Role) gin.HandlerF
 		}
 
 		// Сохраняем данные пользователя в контексте для последующего использования
-		gCtx.Set("userUUID", claims.UserUUID.String())
+		gCtx.Set("userID", claims.UserID)
 		gCtx.Set("userRole", claims.Role)
 
 		gCtx.Next()

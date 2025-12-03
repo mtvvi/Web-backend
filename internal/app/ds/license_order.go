@@ -17,6 +17,9 @@ type LicenseOrder struct {
 	Cores  int `gorm:"type:int;default:0"` // Количество CPU ядер
 	Period int `gorm:"type:int;default:0"` // Период лицензии (лет)
 
+	// Итоговая стоимость заявки (вычисляемая)
+	TotalCost float64 `gorm:"type:decimal(12,2);default:0"`
+
 	Creator   User  `gorm:"foreignKey:CreatorID"`
 	Moderator *User `gorm:"foreignKey:ModeratorID"`
 }

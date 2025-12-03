@@ -79,7 +79,84 @@ func (r *Repository) GetOrCreateOrder(id uint) (*ds.LicenseOrder, error) {
 	return &order, nil
 }
 
-// Получить услуги в заявке (вычисляем стоимость на лету)
+// RecalculateOrderCosts пересчитывает стоимость всех услуг в заявке и сохраняет в БД
+func (r *Repository) RecalculateOrderCosts(orderID uint) error {
+	// Получаем заявку
+	order, err := r.GetOrderByID(orderID)
+	if err != nil {
+		return err
+	}
+
+	// Получаем все связи заявка-услуга
+	var orderServices []ds.OrderService
+	err = r.db.Where("order_id = ?", orderID).Find(&orderServices).Error
+	if err != nil {
+		return err
+	}
+
+	if len(orderServices) == 0 {
+		// Если услуг нет, обнуляем total_cost
+		return r.db.Model(&ds.LicenseOrder{}).Where("id = ?", orderID).Update("total_cost", 0).Error
+	}
+
+	// Получаем все услуги
+	var serviceIDs []uint
+	for _, os := range orderServices {
+		serviceIDs = append(serviceIDs, os.ServiceID)
+	}
+
+	var dbServices []ds.LicenseService
+	err = r.db.Where("id IN ? AND is_deleted = ?", serviceIDs, false).Find(&dbServices).Error
+	if err != nil {
+		return err
+	}
+
+	// Создаем map для быстрого доступа
+	serviceMap := make(map[uint]ds.LicenseService)
+	for _, s := range dbServices {
+		serviceMap[s.ID] = s
+	}
+
+	// Пересчитываем стоимость для каждой услуги и обновляем в БД
+	var totalCost float64
+	for _, os := range orderServices {
+		s, exists := serviceMap[os.ServiceID]
+		if !exists {
+			continue // Услуга удалена
+		}
+
+		// Вычисляем количество в зависимости от типа лицензии
+		var quantity int
+		switch s.LicenseType {
+		case "per_user":
+			quantity = order.Users
+		case "per_core":
+			quantity = order.Cores
+		case "subscription":
+			quantity = order.Period
+		default:
+			quantity = 1
+		}
+
+		// Рассчитываем стоимость
+		subtotal := s.BasePrice * float64(quantity) * os.SupportLevel
+
+		// Обновляем subtotal в БД
+		err = r.db.Model(&ds.OrderService{}).
+			Where("order_id = ? AND service_id = ?", orderID, os.ServiceID).
+			Update("sub_total", subtotal).Error
+		if err != nil {
+			return err
+		}
+
+		totalCost += subtotal
+	}
+
+	// Обновляем total_cost в заявке
+	return r.db.Model(&ds.LicenseOrder{}).Where("id = ?", orderID).Update("total_cost", totalCost).Error
+}
+
+// Получить услуги в заявке (теперь из БД)
 func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) {
 	// Проверяем что заявка существует и не удалена
 	order, err := r.GetOrderByID(orderID)
@@ -115,7 +192,7 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 		serviceMap[s.ID] = s
 	}
 
-	// Создаем список услуг с расчетом стоимости
+	// Создаем список услуг с расчетом стоимости ИЗ БД
 	services := make([]ServiceInOrder, 0, len(orderServices))
 	for _, os := range orderServices {
 		s, exists := serviceMap[os.ServiceID]
@@ -128,22 +205,7 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 			imageURL = *s.ImageURL
 		}
 
-		// Вычисляем количество в зависимости от типа лицензии
-		var quantity int
-		switch s.LicenseType {
-		case "per_user":
-			quantity = order.Users
-		case "per_core":
-			quantity = order.Cores
-		case "subscription":
-			quantity = order.Period
-		default:
-			quantity = 1
-		}
-
-		// Рассчитываем стоимость на лету (теперь SupportLevel из OrderService)
-		subtotal := s.BasePrice * float64(quantity) * os.SupportLevel
-
+		// Берем subtotal из БД
 		services = append(services, ServiceInOrder{
 			ID:           s.ID,
 			Name:         s.Name,
@@ -152,7 +214,7 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 			BasePrice:    s.BasePrice,
 			LicenseType:  s.LicenseType,
 			SupportLevel: os.SupportLevel,
-			SubTotal:     subtotal,
+			SubTotal:     os.SubTotal, // Из БД!
 		})
 	}
 	return services, nil
@@ -221,14 +283,25 @@ func (r *Repository) UpdateServiceSupportLevel(orderID, serviceID uint, supportL
 		supportLevel = 3.0
 	}
 
-	return r.db.Model(&ds.OrderService{}).
+	err := r.db.Model(&ds.OrderService{}).
 		Where("order_id = ? AND service_id = ?", orderID, serviceID).
 		Update("support_level", supportLevel).Error
+	if err != nil {
+		return err
+	}
+
+	// Пересчитываем стоимость после изменения коэффициента
+	return r.RecalculateOrderCosts(orderID)
 }
 
 // Получить все заявки с фильтрацией (кроме удаленных и черновиков)
-func (r *Repository) GetOrders(status string, dateFrom, dateTo *time.Time) ([]ds.LicenseOrder, error) {
+func (r *Repository) GetOrders(status string, dateFrom, dateTo *time.Time, creatorID *uint) ([]ds.LicenseOrder, error) {
 	query := r.db.Model(&ds.LicenseOrder{})
+
+	// Фильтрация по создателю (для обычных пользователей)
+	if creatorID != nil {
+		query = query.Where("creator_id = ?", *creatorID)
+	}
 
 	if status != "" && status != "все" {
 		query = query.Where("status = ?", status)
@@ -265,9 +338,15 @@ func (r *Repository) UpdateOrderFields(orderID uint, users, cores, period *int) 
 		return nil
 	}
 
-	return r.db.Model(&ds.LicenseOrder{}).
+	err := r.db.Model(&ds.LicenseOrder{}).
 		Where("id = ? AND status = ?", orderID, "черновик").
 		Updates(updates).Error
+	if err != nil {
+		return err
+	}
+
+	// Пересчитываем стоимость после изменения параметров
+	return r.RecalculateOrderCosts(orderID)
 }
 
 // Сформировать заявку (создателем)
@@ -292,6 +371,12 @@ func (r *Repository) FormatOrder(orderID uint) error {
 	}
 	if order.Period <= 0 {
 		return errors.New("необходимо указать период лицензирования")
+	}
+
+	// Пересчитываем стоимость перед формированием
+	err = r.RecalculateOrderCosts(orderID)
+	if err != nil {
+		return err
 	}
 
 	now := time.Now()
@@ -355,10 +440,6 @@ func (r *Repository) GetOrderWithServices(orderID uint) (*ds.LicenseOrder, []Ser
 		return nil, nil, 0, err
 	}
 
-	var totalCost float64
-	for _, s := range services {
-		totalCost += s.SubTotal
-	}
-
-	return &order, services, totalCost, nil
+	// Возвращаем TotalCost из БД
+	return &order, services, order.TotalCost, nil
 }
