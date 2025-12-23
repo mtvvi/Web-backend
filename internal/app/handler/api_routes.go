@@ -68,6 +68,12 @@ func (h *APIHandler) RegisterAPIRoutes(router *gin.Engine, authMiddleware *middl
 		auth.POST("/logout", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.AuthHandler.LogoutUser)
 	}
 
+	// Асинхронные колбэки (псевдо-авторизация по ключу)
+	async := api.Group("/async")
+	{
+		async.PUT("/orders/:order_id/services/:service_id/subtotal", h.ReceiveSubtotalResult)
+	}
+
 	// Ping эндпоинт для проверки
 	router.GET("/ping", h.Ping)
 }

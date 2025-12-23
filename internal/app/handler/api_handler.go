@@ -5,6 +5,8 @@ import (
 	"backend/internal/app/repository"
 	"backend/internal/app/role"
 	"backend/internal/app/storage"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,6 +22,34 @@ type APIHandler struct {
 	Repository  *repository.Repository
 	MinIOClient *storage.MinIOClient
 	AuthHandler *AuthHandler
+}
+
+const (
+	// Простой псевдо-ключ для взаимодействия с асинхронным сервисом
+	asyncSecretKey = "license-async-key"
+	// URL асинхронного сервиса (Django) для запуска задач
+	asyncServiceURL = "http://localhost:8001/api/license-activation"
+	// Базовый адрес текущего API, который будет использовать async-сервис для колбэка
+	mainServiceBaseURL = "http://localhost:8080"
+)
+
+// asyncTaskPayload описывает задачу, которую основной сервис отправляет в async-сервис
+type asyncTaskPayload struct {
+	OrderID      uint    `json:"order_id"`
+	ServiceID    uint    `json:"service_id"`
+	LicenseType  string  `json:"license_type"`
+	BasePrice    float64 `json:"base_price"`
+	SupportLevel float64 `json:"support_level"`
+	Users        int     `json:"users"`
+	Cores        int     `json:"cores"`
+	Period       int     `json:"period"`
+	CallbackURL  string  `json:"callback_url"`
+	SecretKey    string  `json:"secret_key"`
+}
+
+// subtotalResultRequest — тело запроса от async-сервиса с рассчитанным sub_total
+type subtotalResultRequest struct {
+	SubTotal float64 `json:"subtotal" binding:"required,gt=0"`
 }
 
 func NewAPIHandler(r *repository.Repository, minioClient *storage.MinIOClient, authHandler *AuthHandler) *APIHandler {
@@ -549,6 +579,8 @@ func (h *APIHandler) GetOrders(c *gin.Context) {
 			moderator = o.Moderator.Login
 		}
 
+		readyCount := h.Repository.CountCalculatedServices(o.ID)
+
 		dtoOrders[i] = dto.OrderResponse{
 			ID:          o.ID,
 			Status:      o.Status,
@@ -561,6 +593,7 @@ func (h *APIHandler) GetOrders(c *gin.Context) {
 			Cores:       o.Cores,
 			Period:      o.Period,
 			TotalCost:   o.TotalCost,
+			ReadyCount:  readyCount,
 		}
 	}
 
@@ -635,6 +668,7 @@ func (h *APIHandler) GetOrder(c *gin.Context) {
 		Period:      order.Period,
 		TotalCost:   totalCost,
 		Services:    dtoServices,
+		ReadyCount:  h.Repository.CountCalculatedServices(order.ID),
 	}
 
 	c.JSON(http.StatusOK, response)
@@ -704,6 +738,59 @@ func (h *APIHandler) FormatOrder(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Заявка успешно сформирована", nil)
 }
 
+// Отправляет задачи в асинхронный сервис для расчета sub_total по услугам
+func (h *APIHandler) triggerAsyncCalculation(orderID uint) {
+	order, services, _, err := h.Repository.GetOrderWithServices(orderID)
+	if err != nil {
+		logrus.Errorf("triggerAsyncCalculation: cannot load order %d: %v", orderID, err)
+		return
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	for _, svc := range services {
+		payload := asyncTaskPayload{
+			OrderID:      orderID,
+			ServiceID:    svc.ID,
+			LicenseType:  svc.LicenseType,
+			BasePrice:    svc.BasePrice,
+			SupportLevel: svc.SupportLevel,
+			Users:        order.Users,
+			Cores:        order.Cores,
+			Period:       order.Period,
+			CallbackURL:  fmt.Sprintf("%s/api/async/orders/%d/services/%d/subtotal", mainServiceBaseURL, orderID, svc.ID),
+			SecretKey:    asyncSecretKey,
+		}
+
+		body, err := json.Marshal(payload)
+		if err != nil {
+			logrus.Errorf("triggerAsyncCalculation: marshal error for order %d, service %d: %v", orderID, svc.ID, err)
+			continue
+		}
+
+		go func(p asyncTaskPayload, reqBody []byte) {
+			req, err := http.NewRequest(http.MethodPost, asyncServiceURL, bytes.NewBuffer(reqBody))
+			if err != nil {
+				logrus.Errorf("triggerAsyncCalculation: build request failed: %v", err)
+				return
+			}
+			req.Header.Set("Content-Type", "application/json")
+
+			resp, err := client.Do(req)
+			if err != nil {
+				logrus.Errorf("triggerAsyncCalculation: request failed for order %d, service %d: %v", p.OrderID, p.ServiceID, err)
+				return
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode >= 300 {
+				bodyBytes, _ := io.ReadAll(resp.Body)
+				logrus.Warnf("triggerAsyncCalculation: async service responded %d: %s", resp.StatusCode, string(bodyBytes))
+			}
+		}(payload, body)
+	}
+}
+
 // CompleteOrder завершает заявку
 // @Summary Завершение заявки
 // @Description Завершает заявку модератором
@@ -734,6 +821,14 @@ func (h *APIHandler) CompleteOrder(c *gin.Context) {
 		h.errorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
+
+	// Обнуляем sub_total и запускаем асинхронный расчет результатов для услуг в заявке
+	if err := h.Repository.ResetOrderSubTotals(uint(id)); err != nil {
+		logrus.Error("Error resetting subtotals: ", err)
+		h.errorResponse(c, http.StatusInternalServerError, "Не удалось сбросить промежуточные суммы")
+		return
+	}
+	h.triggerAsyncCalculation(uint(id))
 
 	h.successResponse(c, http.StatusOK, "Заявка успешно завершена", nil)
 }
@@ -798,6 +893,51 @@ func (h *APIHandler) DeleteOrder(c *gin.Context) {
 	}
 
 	h.successResponse(c, http.StatusOK, "Заявка успешно удалена", nil)
+}
+
+// ReceiveSubtotalResult принимает результат асинхронного сервиса
+// @Summary Прием результата асинхронного расчета
+// @Description Принимает рассчитанный sub_total по услуге от внешнего async сервиса (по секретному ключу)
+// @Tags Orders
+// @Accept json
+// @Produce json
+// @Param order_id path int true "ID заявки"
+// @Param service_id path int true "ID услуги"
+// @Param request body subtotalResultRequest true "Рассчитанный sub_total"
+// @Success 200 {object} dto.SuccessResponse
+// @Failure 400 {object} dto.ErrorResponse
+// @Failure 401 {object} dto.ErrorResponse
+// @Router /api/async/orders/{order_id}/services/{service_id}/subtotal [put]
+func (h *APIHandler) ReceiveSubtotalResult(c *gin.Context) {
+	// Псевдо-авторизация через статичный ключ
+	if c.GetHeader("X-Async-Key") != asyncSecretKey {
+		h.errorResponse(c, http.StatusUnauthorized, "Неверный async ключ")
+		return
+	}
+
+	orderIDStr := c.Param("order_id")
+	serviceIDStr := c.Param("service_id")
+
+	orderID, err1 := strconv.ParseUint(orderIDStr, 10, 32)
+	serviceID, err2 := strconv.ParseUint(serviceIDStr, 10, 32)
+	if err1 != nil || err2 != nil || orderID == 0 || serviceID == 0 {
+		h.errorResponse(c, http.StatusBadRequest, "Неверные ID")
+		return
+	}
+
+	var req subtotalResultRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.errorResponse(c, http.StatusBadRequest, "Неверные данные: "+err.Error())
+		return
+	}
+
+	if err := h.Repository.UpdateOrderSubTotal(uint(orderID), uint(serviceID), req.SubTotal); err != nil {
+		logrus.Error("ReceiveSubtotalResult: ", err)
+		h.errorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	h.successResponse(c, http.StatusOK, "Результат сохранен", nil)
 }
 
 // ============ ДОМЕН М-М (Order Services) ============

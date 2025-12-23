@@ -63,7 +63,8 @@ type OrderResponse struct {
 	Cores       int                  `json:"cores"`
 	Period      int                  `json:"period"`
 	TotalCost   float64              `json:"total_cost,omitempty"`
-	Services    []ServiceInOrderResp `json:"services,omitempty"` // Только для GET одной заявки
+	Services    []ServiceInOrderResp `json:"services,omitempty"`       // Только для GET одной заявки
+	ReadyCount  int                  `json:"ready_services,omitempty"` // Кол-во услуг с готовым async результатом
 }
 
 type ServiceInOrderResp struct {

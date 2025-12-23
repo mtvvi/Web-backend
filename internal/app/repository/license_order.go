@@ -80,16 +80,11 @@ func (r *Repository) GetOrCreateOrder(id uint) (*ds.LicenseOrder, error) {
 }
 
 // RecalculateOrderCosts пересчитывает стоимость всех услуг в заявке и сохраняет в БД
+// ВАЖНО: не рассчитывает sub_total (это делает асинхронный сервис), только суммирует существующие
 func (r *Repository) RecalculateOrderCosts(orderID uint) error {
-	// Получаем заявку
-	order, err := r.GetOrderByID(orderID)
-	if err != nil {
-		return err
-	}
-
 	// Получаем все связи заявка-услуга
 	var orderServices []ds.OrderService
-	err = r.db.Where("order_id = ?", orderID).Find(&orderServices).Error
+	err := r.db.Where("order_id = ?", orderID).Find(&orderServices).Error
 	if err != nil {
 		return err
 	}
@@ -99,57 +94,10 @@ func (r *Repository) RecalculateOrderCosts(orderID uint) error {
 		return r.db.Model(&ds.LicenseOrder{}).Where("id = ?", orderID).Update("total_cost", 0).Error
 	}
 
-	// Получаем все услуги
-	var serviceIDs []uint
-	for _, os := range orderServices {
-		serviceIDs = append(serviceIDs, os.ServiceID)
-	}
-
-	var dbServices []ds.LicenseService
-	err = r.db.Where("id IN ? AND is_deleted = ?", serviceIDs, false).Find(&dbServices).Error
-	if err != nil {
-		return err
-	}
-
-	// Создаем map для быстрого доступа
-	serviceMap := make(map[uint]ds.LicenseService)
-	for _, s := range dbServices {
-		serviceMap[s.ID] = s
-	}
-
-	// Пересчитываем стоимость для каждой услуги и обновляем в БД
+	// Суммируем существующие sub_total (расчет происходит асинхронно)
 	var totalCost float64
 	for _, os := range orderServices {
-		s, exists := serviceMap[os.ServiceID]
-		if !exists {
-			continue // Услуга удалена
-		}
-
-		// Вычисляем количество в зависимости от типа лицензии
-		var quantity int
-		switch s.LicenseType {
-		case "per_user":
-			quantity = order.Users
-		case "per_core":
-			quantity = order.Cores
-		case "subscription":
-			quantity = order.Period
-		default:
-			quantity = 1
-		}
-
-		// Рассчитываем стоимость
-		subtotal := s.BasePrice * float64(quantity) * os.SupportLevel
-
-		// Обновляем subtotal в БД
-		err = r.db.Model(&ds.OrderService{}).
-			Where("order_id = ? AND service_id = ?", orderID, os.ServiceID).
-			Update("sub_total", subtotal).Error
-		if err != nil {
-			return err
-		}
-
-		totalCost += subtotal
+		totalCost += os.SubTotal
 	}
 
 	// Обновляем total_cost в заявке
@@ -220,6 +168,45 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 	return services, nil
 }
 
+// Обнулить все sub_total для заявки (перед асинхронным перерасчетом)
+func (r *Repository) ResetOrderSubTotals(orderID uint) error {
+	if err := r.db.Model(&ds.OrderService{}).
+		Where("order_id = ?", orderID).
+		Update("sub_total", 0).Error; err != nil {
+		return err
+	}
+
+	return r.db.Model(&ds.LicenseOrder{}).
+		Where("id = ?", orderID).
+		Update("total_cost", 0).Error
+}
+
+// Установить sub_total для услуги и пересчитать total_cost как сумму sub_total
+func (r *Repository) UpdateOrderSubTotal(orderID, serviceID uint, subTotal float64) error {
+	result := r.db.Model(&ds.OrderService{}).
+		Where("order_id = ? AND service_id = ?", orderID, serviceID).
+		Update("sub_total", subTotal)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("услуга в заявке не найдена")
+	}
+
+	// Считаем сумму
+	var sum float64
+	err := r.db.Model(&ds.OrderService{}).
+		Where("order_id = ?", orderID).
+		Select("COALESCE(SUM(sub_total), 0)").Scan(&sum).Error
+	if err != nil {
+		return err
+	}
+
+	return r.db.Model(&ds.LicenseOrder{}).
+		Where("id = ?", orderID).
+		Update("total_cost", sum).Error
+}
+
 // Получить количество услуг в заявке (количество записей, не сумму)
 func (r *Repository) GetOrderCount(orderID uint) int {
 	order, err := r.GetOrderByID(orderID)
@@ -229,6 +216,24 @@ func (r *Repository) GetOrderCount(orderID uint) int {
 
 	var count int64
 	err = r.db.Model(&ds.OrderService{}).Where("order_id = ?", order.ID).Count(&count).Error
+	if err != nil {
+		return 0
+	}
+
+	return int(count)
+}
+
+// Количество услуг в заявке, для которых рассчитан sub_total (>0)
+func (r *Repository) CountCalculatedServices(orderID uint) int {
+	order, err := r.GetOrderByID(orderID)
+	if err != nil {
+		return 0
+	}
+
+	var count int64
+	err = r.db.Model(&ds.OrderService{}).
+		Where("order_id = ? AND sub_total > 0", order.ID).
+		Count(&count).Error
 	if err != nil {
 		return 0
 	}
@@ -373,8 +378,8 @@ func (r *Repository) FormatOrder(orderID uint) error {
 		return errors.New("необходимо указать период лицензирования")
 	}
 
-	// Пересчитываем стоимость перед формированием
-	err = r.RecalculateOrderCosts(orderID)
+	// Обнуляем sub_total для всех услуг (расчет будет в асинхронном сервисе после завершения)
+	err = r.ResetOrderSubTotals(orderID)
 	if err != nil {
 		return err
 	}
