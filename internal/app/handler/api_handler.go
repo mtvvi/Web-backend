@@ -35,16 +35,16 @@ const (
 
 // asyncTaskPayload описывает задачу, которую основной сервис отправляет в async-сервис
 type asyncTaskPayload struct {
-	OrderID      uint    `json:"order_id"`
-	ServiceID    uint    `json:"service_id"`
-	LicenseType  string  `json:"license_type"`
-	BasePrice    float64 `json:"base_price"`
-	SupportLevel float64 `json:"support_level"`
-	Users        int     `json:"users"`
-	Cores        int     `json:"cores"`
-	Period       int     `json:"period"`
-	CallbackURL  string  `json:"callback_url"`
-	SecretKey    string  `json:"secret_key"`
+	LicenseCalculationRequestID uint    `json:"licenseCalculationRequest_id"`
+	ServiceID                   uint    `json:"service_id"`
+	LicenseType                 string  `json:"license_type"`
+	BasePrice                   float64 `json:"base_price"`
+	SupportLevel                float64 `json:"support_level"`
+	Users                       int     `json:"users"`
+	Cores                       int     `json:"cores"`
+	Period                      int     `json:"period"`
+	CallbackURL                 string  `json:"callback_url"`
+	SecretKey                   string  `json:"secret_key"`
 }
 
 // subtotalResultRequest — тело запроса от async-сервиса с рассчитанным sub_total
@@ -171,7 +171,7 @@ func (h *APIHandler) GetService(c *gin.Context) {
 
 	service, err := h.Repository.GetServiceByID(uint(id))
 	if err != nil || service == nil {
-		h.errorResponse(c, http.StatusNotFound, "Услуга не найдена")
+		h.errorResponse(c, http.StatusNotFound, "Лицензия не найдена")
 		return
 	}
 
@@ -256,7 +256,7 @@ func (h *APIHandler) UpdateService(c *gin.Context) {
 	// Проверяем существование услуги
 	exists, err := h.Repository.ServiceExists(uint(id))
 	if err != nil || !exists {
-		h.errorResponse(c, http.StatusNotFound, "Услуга не найдена")
+		h.errorResponse(c, http.StatusNotFound, "Лицензия не найдена")
 		return
 	}
 
@@ -284,7 +284,7 @@ func (h *APIHandler) UpdateService(c *gin.Context) {
 		return
 	}
 
-	h.successResponse(c, http.StatusOK, "Услуга успешно обновлена", nil)
+	h.successResponse(c, http.StatusOK, "Лицензия успешно обновлена", nil)
 }
 
 // DeleteService удаляет услугу
@@ -327,10 +327,10 @@ func (h *APIHandler) DeleteService(c *gin.Context) {
 		return
 	}
 
-	h.successResponse(c, http.StatusOK, "Услуга успешно удалена", nil)
+	h.successResponse(c, http.StatusOK, "Лицензия успешно удалена", nil)
 }
 
-// AddServiceToOrder добавляет услугу в заявку
+// AddServiceToLicenseCalculationRequest добавляет услугу в заявку
 // @Summary Добавление услуги в заявку
 // @Description Добавляет услугу в черновик заявки текущего пользователя
 // @Tags Services
@@ -341,8 +341,8 @@ func (h *APIHandler) DeleteService(c *gin.Context) {
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /api/services/{id}/add-to-order [post]
-func (h *APIHandler) AddServiceToOrder(c *gin.Context) {
+// @Router /api/services/{id}/add-to-licenseCalculationRequest [post]
+func (h *APIHandler) AddServiceToLicenseCalculationRequest(c *gin.Context) {
 	userID, _, err := h.getUserFromContext(c)
 	if err != nil || userID == 0 {
 		h.errorResponse(c, http.StatusUnauthorized, "Ошибка авторизации")
@@ -359,32 +359,32 @@ func (h *APIHandler) AddServiceToOrder(c *gin.Context) {
 	// Проверяем существование услуги
 	exists, err := h.Repository.ServiceExists(uint(serviceID))
 	if err != nil || !exists {
-		h.errorResponse(c, http.StatusNotFound, "Услуга не найдена")
+		h.errorResponse(c, http.StatusNotFound, "Лицензия не найдена")
 		return
 	}
 
 	// Получаем или создаем черновик заявки
-	order, err := h.Repository.GetDraftOrder(userID)
+	licenseCalculationRequest, err := h.Repository.GetDraftLicenseCalculationRequest(userID)
 	if err != nil {
 		// Черновика нет - создаем
-		order, err = h.Repository.CreateDraftOrder(userID)
+		licenseCalculationRequest, err = h.Repository.CreateDraftLicenseCalculationRequest(userID)
 		if err != nil {
-			logrus.Error("Error creating draft order: ", err)
+			logrus.Error("Error creating draft licenseCalculationRequest: ", err)
 			h.errorResponse(c, http.StatusInternalServerError, "Ошибка создания заявки")
 			return
 		}
 	}
 
 	// Добавляем услугу в заявку
-	err = h.Repository.AddServiceToOrder(order.ID, uint(serviceID))
+	err = h.Repository.AddServiceToLicenseCalculationRequest(licenseCalculationRequest.ID, uint(serviceID))
 	if err != nil {
-		logrus.Error("Error adding service to order: ", err)
+		logrus.Error("Error adding service to licenseCalculationRequest: ", err)
 		h.errorResponse(c, http.StatusInternalServerError, "Ошибка добавления услуги в заявку")
 		return
 	}
 
-	h.successResponse(c, http.StatusOK, "Услуга добавлена в заявку", gin.H{
-		"order_id": order.ID,
+	h.successResponse(c, http.StatusOK, "Лицензия добавлена в заявку", gin.H{
+		"licenseCalculationRequest_id": licenseCalculationRequest.ID,
 	})
 }
 
@@ -413,7 +413,7 @@ func (h *APIHandler) UploadServiceImage(c *gin.Context) {
 	// Проверяем существование услуги
 	service, err := h.Repository.GetServiceByID(uint(id))
 	if err != nil || service == nil {
-		h.errorResponse(c, http.StatusNotFound, "Услуга не найдена")
+		h.errorResponse(c, http.StatusNotFound, "Лицензия не найдена")
 		return
 	}
 
@@ -480,53 +480,53 @@ func (h *APIHandler) UploadServiceImage(c *gin.Context) {
 // GetCart получает информацию о корзине
 // @Summary Получение информации о корзине
 // @Description Возвращает количество услуг в черновике заявки
-// @Tags Orders
+// @Tags LicenseCalculationRequests
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} dto.CartResponse
-// @Router /api/orders/cart [get]
+// @Router /api/licenseCalculationRequests/cart [get]
 func (h *APIHandler) GetCart(c *gin.Context) {
 	userID, _, err := h.getUserFromContext(c)
 	if err != nil || userID == 0 {
 		// Нет авторизации - возвращаем пустую корзину
 		c.JSON(http.StatusOK, dto.CartResponse{
-			OrderID:      0,
-			ServiceCount: 0,
+			LicenseCalculationRequestID: 0,
+			ServiceCount:                0,
 		})
 		return
 	}
 
-	order, err := h.Repository.GetDraftOrder(userID)
+	licenseCalculationRequest, err := h.Repository.GetDraftLicenseCalculationRequest(userID)
 	if err != nil {
 		// Нет черновика - возвращаем пустую корзину
 		c.JSON(http.StatusOK, dto.CartResponse{
-			OrderID:      0,
-			ServiceCount: 0,
+			LicenseCalculationRequestID: 0,
+			ServiceCount:                0,
 		})
 		return
 	}
 
-	count := h.Repository.GetOrderCount(order.ID)
+	count := h.Repository.GetLicenseCalculationRequestCount(licenseCalculationRequest.ID)
 
 	c.JSON(http.StatusOK, dto.CartResponse{
-		OrderID:      order.ID,
-		ServiceCount: count,
+		LicenseCalculationRequestID: licenseCalculationRequest.ID,
+		ServiceCount:                count,
 	})
 }
 
-// GetOrders получает список заявок
+// GetLicenseCalculationRequests получает список заявок
 // @Summary Получение списка заявок
 // @Description Возвращает список заявок с возможностью фильтрации по статусу и датам
-// @Tags Orders
+// @Tags LicenseCalculationRequests
 // @Produce json
 // @Security BearerAuth
 // @Param status query string false "Фильтр по статусу"
 // @Param date_from query string false "Дата начала (формат: 2006-01-02)"
 // @Param date_to query string false "Дата окончания (формат: 2006-01-02)"
-// @Success 200 {object} dto.OrderListResponse
+// @Success 200 {object} dto.LicenseCalculationRequestListResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /api/orders [get]
-func (h *APIHandler) GetOrders(c *gin.Context) {
+// @Router /api/licenseCalculationRequests [get]
+func (h *APIHandler) GetLicenseCalculationRequests(c *gin.Context) {
 	status := c.Query("status")
 	dateFromStr := c.Query("date_from")
 	dateToStr := c.Query("date_to")
@@ -559,16 +559,16 @@ func (h *APIHandler) GetOrders(c *gin.Context) {
 		creatorID = &userID
 	}
 
-	orders, err := h.Repository.GetOrders(status, dateFrom, dateTo, creatorID)
+	licenseCalculationRequests, err := h.Repository.GetLicenseCalculationRequests(status, dateFrom, dateTo, creatorID)
 	if err != nil {
-		logrus.Error("Error getting orders: ", err)
+		logrus.Error("Error getting licenseCalculationRequests: ", err)
 		h.errorResponse(c, http.StatusInternalServerError, "Ошибка получения заявок")
 		return
 	}
 
 	// Преобразуем в DTO
-	dtoOrders := make([]dto.OrderResponse, len(orders))
-	for i, o := range orders {
+	dtoLicenseCalculationRequests := make([]dto.LicenseCalculationRequestResponse, len(licenseCalculationRequests))
+	for i, o := range licenseCalculationRequests {
 		creator := "unknown"
 		if o.Creator.Login != "" {
 			creator = o.Creator.Login
@@ -581,7 +581,7 @@ func (h *APIHandler) GetOrders(c *gin.Context) {
 
 		readyCount := h.Repository.CountCalculatedServices(o.ID)
 
-		dtoOrders[i] = dto.OrderResponse{
+		dtoLicenseCalculationRequests[i] = dto.LicenseCalculationRequestResponse{
 			ID:          o.ID,
 			Status:      o.Status,
 			CreatedAt:   o.CreatedAt,
@@ -597,26 +597,26 @@ func (h *APIHandler) GetOrders(c *gin.Context) {
 		}
 	}
 
-	response := dto.OrderListResponse{
-		Orders: dtoOrders,
-		Total:  len(dtoOrders),
+	response := dto.LicenseCalculationRequestListResponse{
+		LicenseCalculationRequests: dtoLicenseCalculationRequests,
+		Total:                      len(dtoLicenseCalculationRequests),
 	}
 
 	c.JSON(http.StatusOK, response)
 }
 
-// GetOrder получает одну заявку
+// GetLicenseCalculationRequest получает одну заявку
 // @Summary Получение заявки по ID
 // @Description Возвращает детальную информацию о заявке с услугами
-// @Tags Orders
+// @Tags LicenseCalculationRequests
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID заявки"
-// @Success 200 {object} dto.OrderResponse
+// @Success 200 {object} dto.LicenseCalculationRequestResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 404 {object} dto.ErrorResponse
-// @Router /api/orders/{id} [get]
-func (h *APIHandler) GetOrder(c *gin.Context) {
+// @Router /api/licenseCalculationRequests/{id} [get]
+func (h *APIHandler) GetLicenseCalculationRequest(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil || id == 0 {
@@ -624,16 +624,16 @@ func (h *APIHandler) GetOrder(c *gin.Context) {
 		return
 	}
 
-	order, services, totalCost, err := h.Repository.GetOrderWithServices(uint(id))
+	licenseCalculationRequest, services, totalCost, err := h.Repository.GetLicenseCalculationRequestWithServices(uint(id))
 	if err != nil {
 		h.errorResponse(c, http.StatusNotFound, "Заявка не найдена")
 		return
 	}
 
 	// Преобразуем услуги в DTO
-	dtoServices := make([]dto.ServiceInOrderResp, len(services))
+	dtoServices := make([]dto.ServiceInLicenseCalculationRequestResp, len(services))
 	for i, s := range services {
-		dtoServices[i] = dto.ServiceInOrderResp{
+		dtoServices[i] = dto.ServiceInLicenseCalculationRequestResp{
 			ID:           s.ID,
 			Name:         s.Name,
 			Description:  s.Description,
@@ -646,47 +646,47 @@ func (h *APIHandler) GetOrder(c *gin.Context) {
 	}
 
 	creator := "unknown"
-	if order.Creator.Login != "" {
-		creator = order.Creator.Login
+	if licenseCalculationRequest.Creator.Login != "" {
+		creator = licenseCalculationRequest.Creator.Login
 	}
 
 	moderator := ""
-	if order.Moderator != nil && order.Moderator.Login != "" {
-		moderator = order.Moderator.Login
+	if licenseCalculationRequest.Moderator != nil && licenseCalculationRequest.Moderator.Login != "" {
+		moderator = licenseCalculationRequest.Moderator.Login
 	}
 
-	response := dto.OrderResponse{
-		ID:          order.ID,
-		Status:      order.Status,
-		CreatedAt:   order.CreatedAt,
-		FormattedAt: order.FormattedAt,
-		CompletedAt: order.CompletedAt,
+	response := dto.LicenseCalculationRequestResponse{
+		ID:          licenseCalculationRequest.ID,
+		Status:      licenseCalculationRequest.Status,
+		CreatedAt:   licenseCalculationRequest.CreatedAt,
+		FormattedAt: licenseCalculationRequest.FormattedAt,
+		CompletedAt: licenseCalculationRequest.CompletedAt,
 		Creator:     creator,
 		Moderator:   moderator,
-		Users:       order.Users,
-		Cores:       order.Cores,
-		Period:      order.Period,
+		Users:       licenseCalculationRequest.Users,
+		Cores:       licenseCalculationRequest.Cores,
+		Period:      licenseCalculationRequest.Period,
 		TotalCost:   totalCost,
 		Services:    dtoServices,
-		ReadyCount:  h.Repository.CountCalculatedServices(order.ID),
+		ReadyCount:  h.Repository.CountCalculatedServices(licenseCalculationRequest.ID),
 	}
 
 	c.JSON(http.StatusOK, response)
 }
 
-// UpdateOrderFields обновляет поля заявки
+// UpdateLicenseCalculationRequestFields обновляет поля заявки
 // @Summary Обновление полей заявки
 // @Description Обновляет количество пользователей, ядер и период для заявки
-// @Tags Orders
+// @Tags LicenseCalculationRequests
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID заявки"
-// @Param request body dto.UpdateOrderFieldsRequest true "Данные для обновления"
+// @Param request body dto.UpdateLicenseCalculationRequestFieldsRequest true "Данные для обновления"
 // @Success 200 {object} dto.SuccessResponse
 // @Failure 400 {object} dto.ErrorResponse
-// @Router /api/orders/{id} [put]
-func (h *APIHandler) UpdateOrderFields(c *gin.Context) {
+// @Router /api/licenseCalculationRequests/{id} [put]
+func (h *APIHandler) UpdateLicenseCalculationRequestFields(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil || id == 0 {
@@ -694,15 +694,15 @@ func (h *APIHandler) UpdateOrderFields(c *gin.Context) {
 		return
 	}
 
-	var req dto.UpdateOrderFieldsRequest
+	var req dto.UpdateLicenseCalculationRequestFieldsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.errorResponse(c, http.StatusBadRequest, "Неверные данные: "+err.Error())
 		return
 	}
 
-	err = h.Repository.UpdateOrderFields(uint(id), req.Users, req.Cores, req.Period)
+	err = h.Repository.UpdateLicenseCalculationRequestFields(uint(id), req.Users, req.Cores, req.Period)
 	if err != nil {
-		logrus.Error("Error updating order fields: ", err)
+		logrus.Error("Error updating licenseCalculationRequest fields: ", err)
 		h.errorResponse(c, http.StatusBadRequest, "Ошибка обновления заявки (проверьте статус)")
 		return
 	}
@@ -710,17 +710,17 @@ func (h *APIHandler) UpdateOrderFields(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Заявка успешно обновлена", nil)
 }
 
-// FormatOrder формирует заявку
+// FormatLicenseCalculationRequest формирует заявку
 // @Summary Формирование заявки
 // @Description Переводит заявку из статуса черновик в статус сформирован
-// @Tags Orders
+// @Tags LicenseCalculationRequests
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID заявки"
 // @Success 200 {object} dto.SuccessResponse
 // @Failure 400 {object} dto.ErrorResponse
-// @Router /api/orders/{id}/format [put]
-func (h *APIHandler) FormatOrder(c *gin.Context) {
+// @Router /api/licenseCalculationRequests/{id}/format [put]
+func (h *APIHandler) FormatLicenseCalculationRequest(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil || id == 0 {
@@ -728,9 +728,9 @@ func (h *APIHandler) FormatOrder(c *gin.Context) {
 		return
 	}
 
-	err = h.Repository.FormatOrder(uint(id))
+	err = h.Repository.FormatLicenseCalculationRequest(uint(id))
 	if err != nil {
-		logrus.Error("Error formatting order: ", err)
+		logrus.Error("Error formatting licenseCalculationRequest: ", err)
 		h.errorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -739,10 +739,10 @@ func (h *APIHandler) FormatOrder(c *gin.Context) {
 }
 
 // Отправляет задачи в асинхронный сервис для расчета sub_total по услугам
-func (h *APIHandler) triggerAsyncCalculation(orderID uint) {
-	order, services, _, err := h.Repository.GetOrderWithServices(orderID)
+func (h *APIHandler) triggerAsyncCalculation(licenseCalculationRequestID uint) {
+	licenseCalculationRequest, services, _, err := h.Repository.GetLicenseCalculationRequestWithServices(licenseCalculationRequestID)
 	if err != nil {
-		logrus.Errorf("triggerAsyncCalculation: cannot load order %d: %v", orderID, err)
+		logrus.Errorf("triggerAsyncCalculation: cannot load licenseCalculationRequest %d: %v", licenseCalculationRequestID, err)
 		return
 	}
 
@@ -750,21 +750,21 @@ func (h *APIHandler) triggerAsyncCalculation(orderID uint) {
 
 	for _, svc := range services {
 		payload := asyncTaskPayload{
-			OrderID:      orderID,
-			ServiceID:    svc.ID,
-			LicenseType:  svc.LicenseType,
-			BasePrice:    svc.BasePrice,
-			SupportLevel: svc.SupportLevel,
-			Users:        order.Users,
-			Cores:        order.Cores,
-			Period:       order.Period,
-			CallbackURL:  fmt.Sprintf("%s/api/async/orders/%d/services/%d/subtotal", mainServiceBaseURL, orderID, svc.ID),
-			SecretKey:    asyncSecretKey,
+			LicenseCalculationRequestID: licenseCalculationRequestID,
+			ServiceID:                   svc.ID,
+			LicenseType:                 svc.LicenseType,
+			BasePrice:                   svc.BasePrice,
+			SupportLevel:                svc.SupportLevel,
+			Users:                       licenseCalculationRequest.Users,
+			Cores:                       licenseCalculationRequest.Cores,
+			Period:                      licenseCalculationRequest.Period,
+			CallbackURL:                 fmt.Sprintf("%s/api/async/licenseCalculationRequests/%d/services/%d/subtotal", mainServiceBaseURL, licenseCalculationRequestID, svc.ID),
+			SecretKey:                   asyncSecretKey,
 		}
 
 		body, err := json.Marshal(payload)
 		if err != nil {
-			logrus.Errorf("triggerAsyncCalculation: marshal error for order %d, service %d: %v", orderID, svc.ID, err)
+			logrus.Errorf("triggerAsyncCalculation: marshal error for licenseCalculationRequest %d, service %d: %v", licenseCalculationRequestID, svc.ID, err)
 			continue
 		}
 
@@ -778,7 +778,7 @@ func (h *APIHandler) triggerAsyncCalculation(orderID uint) {
 
 			resp, err := client.Do(req)
 			if err != nil {
-				logrus.Errorf("triggerAsyncCalculation: request failed for order %d, service %d: %v", p.OrderID, p.ServiceID, err)
+				logrus.Errorf("triggerAsyncCalculation: request failed for licenseCalculationRequest %d, service %d: %v", p.LicenseCalculationRequestID, p.ServiceID, err)
 				return
 			}
 			defer resp.Body.Close()
@@ -791,17 +791,17 @@ func (h *APIHandler) triggerAsyncCalculation(orderID uint) {
 	}
 }
 
-// CompleteOrder завершает заявку
+// CompleteLicenseCalculationRequest завершает заявку
 // @Summary Завершение заявки
 // @Description Завершает заявку модератором
-// @Tags Orders
+// @Tags LicenseCalculationRequests
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID заявки"
 // @Success 200 {object} dto.SuccessResponse
 // @Failure 400 {object} dto.ErrorResponse
-// @Router /api/orders/{id}/complete [put]
-func (h *APIHandler) CompleteOrder(c *gin.Context) {
+// @Router /api/licenseCalculationRequests/{id}/complete [put]
+func (h *APIHandler) CompleteLicenseCalculationRequest(c *gin.Context) {
 	moderatorID, _, err := h.getUserFromContext(c)
 	if err != nil || moderatorID == 0 {
 		h.errorResponse(c, http.StatusUnauthorized, "Ошибка авторизации")
@@ -815,15 +815,15 @@ func (h *APIHandler) CompleteOrder(c *gin.Context) {
 		return
 	}
 
-	err = h.Repository.CompleteOrder(uint(id), moderatorID)
+	err = h.Repository.CompleteLicenseCalculationRequest(uint(id), moderatorID)
 	if err != nil {
-		logrus.Error("Error completing order: ", err)
+		logrus.Error("Error completing licenseCalculationRequest: ", err)
 		h.errorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Обнуляем sub_total и запускаем асинхронный расчет результатов для услуг в заявке
-	if err := h.Repository.ResetOrderSubTotals(uint(id)); err != nil {
+	if err := h.Repository.ResetLicenseCalculationRequestSubTotals(uint(id)); err != nil {
 		logrus.Error("Error resetting subtotals: ", err)
 		h.errorResponse(c, http.StatusInternalServerError, "Не удалось сбросить промежуточные суммы")
 		return
@@ -833,17 +833,17 @@ func (h *APIHandler) CompleteOrder(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Заявка успешно завершена", nil)
 }
 
-// RejectOrder отклоняет заявку
+// RejectLicenseCalculationRequest отклоняет заявку
 // @Summary Отклонение заявки
 // @Description Отклоняет заявку модератором
-// @Tags Orders
+// @Tags LicenseCalculationRequests
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID заявки"
 // @Success 200 {object} dto.SuccessResponse
 // @Failure 400 {object} dto.ErrorResponse
-// @Router /api/orders/{id}/reject [put]
-func (h *APIHandler) RejectOrder(c *gin.Context) {
+// @Router /api/licenseCalculationRequests/{id}/reject [put]
+func (h *APIHandler) RejectLicenseCalculationRequest(c *gin.Context) {
 	moderatorID, _, err := h.getUserFromContext(c)
 	if err != nil || moderatorID == 0 {
 		h.errorResponse(c, http.StatusUnauthorized, "Ошибка авторизации")
@@ -857,9 +857,9 @@ func (h *APIHandler) RejectOrder(c *gin.Context) {
 		return
 	}
 
-	err = h.Repository.RejectOrder(uint(id), moderatorID)
+	err = h.Repository.RejectLicenseCalculationRequest(uint(id), moderatorID)
 	if err != nil {
-		logrus.Error("Error rejecting order: ", err)
+		logrus.Error("Error rejecting licenseCalculationRequest: ", err)
 		h.errorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -867,17 +867,17 @@ func (h *APIHandler) RejectOrder(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Заявка успешно отклонена", nil)
 }
 
-// DeleteOrder удаляет заявку
+// DeleteLicenseCalculationRequest удаляет заявку
 // @Summary Удаление заявки
 // @Description Удаляет заявку
-// @Tags Orders
+// @Tags LicenseCalculationRequests
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID заявки"
 // @Success 200 {object} dto.SuccessResponse
 // @Failure 400 {object} dto.ErrorResponse
-// @Router /api/orders/{id} [delete]
-func (h *APIHandler) DeleteOrder(c *gin.Context) {
+// @Router /api/licenseCalculationRequests/{id} [delete]
+func (h *APIHandler) DeleteLicenseCalculationRequest(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil || id == 0 {
@@ -885,9 +885,9 @@ func (h *APIHandler) DeleteOrder(c *gin.Context) {
 		return
 	}
 
-	err = h.Repository.DeleteOrder(uint(id))
+	err = h.Repository.DeleteLicenseCalculationRequest(uint(id))
 	if err != nil {
-		logrus.Error("Error deleting order: ", err)
+		logrus.Error("Error deleting licenseCalculationRequest: ", err)
 		h.errorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -898,16 +898,16 @@ func (h *APIHandler) DeleteOrder(c *gin.Context) {
 // ReceiveSubtotalResult принимает результат асинхронного сервиса
 // @Summary Прием результата асинхронного расчета
 // @Description Принимает рассчитанный sub_total по услуге от внешнего async сервиса (по секретному ключу)
-// @Tags Orders
+// @Tags LicenseCalculationRequests
 // @Accept json
 // @Produce json
-// @Param order_id path int true "ID заявки"
+// @Param licenseCalculationRequest_id path int true "ID заявки"
 // @Param service_id path int true "ID услуги"
 // @Param request body subtotalResultRequest true "Рассчитанный sub_total"
 // @Success 200 {object} dto.SuccessResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 401 {object} dto.ErrorResponse
-// @Router /api/async/orders/{order_id}/services/{service_id}/subtotal [put]
+// @Router /api/async/licenseCalculationRequests/{licenseCalculationRequest_id}/services/{service_id}/subtotal [put]
 func (h *APIHandler) ReceiveSubtotalResult(c *gin.Context) {
 	// Псевдо-авторизация через статичный ключ
 	if c.GetHeader("X-Async-Key") != asyncSecretKey {
@@ -915,12 +915,12 @@ func (h *APIHandler) ReceiveSubtotalResult(c *gin.Context) {
 		return
 	}
 
-	orderIDStr := c.Param("order_id")
+	licenseCalculationRequestIDStr := c.Param("licenseCalculationRequest_id")
 	serviceIDStr := c.Param("service_id")
 
-	orderID, err1 := strconv.ParseUint(orderIDStr, 10, 32)
+	licenseCalculationRequestID, err1 := strconv.ParseUint(licenseCalculationRequestIDStr, 10, 32)
 	serviceID, err2 := strconv.ParseUint(serviceIDStr, 10, 32)
-	if err1 != nil || err2 != nil || orderID == 0 || serviceID == 0 {
+	if err1 != nil || err2 != nil || licenseCalculationRequestID == 0 || serviceID == 0 {
 		h.errorResponse(c, http.StatusBadRequest, "Неверные ID")
 		return
 	}
@@ -931,7 +931,7 @@ func (h *APIHandler) ReceiveSubtotalResult(c *gin.Context) {
 		return
 	}
 
-	if err := h.Repository.UpdateOrderSubTotal(uint(orderID), uint(serviceID), req.SubTotal); err != nil {
+	if err := h.Repository.UpdateLicenseCalculationRequestSubTotal(uint(licenseCalculationRequestID), uint(serviceID), req.SubTotal); err != nil {
 		logrus.Error("ReceiveSubtotalResult: ", err)
 		h.errorResponse(c, http.StatusBadRequest, err.Error())
 		return
@@ -940,75 +940,75 @@ func (h *APIHandler) ReceiveSubtotalResult(c *gin.Context) {
 	h.successResponse(c, http.StatusOK, "Результат сохранен", nil)
 }
 
-// ============ ДОМЕН М-М (Order Services) ============
+// ============ ДОМЕН М-М (LicenseCalculationRequest Services) ============
 
-// RemoveServiceFromOrder удаляет услугу из заявки
+// RemoveServiceFromLicenseCalculationRequest удаляет услугу из заявки
 // @Summary Удаление услуги из заявки
 // @Description Удаляет услугу из заявки
-// @Tags Order-Services
+// @Tags LicenseCalculationRequest-Services
 // @Produce json
 // @Security BearerAuth
-// @Param order_id path int true "ID заявки"
+// @Param licenseCalculationRequest_id path int true "ID заявки"
 // @Param service_id path int true "ID услуги"
 // @Success 200 {object} dto.SuccessResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /api/order-services/{order_id}/{service_id} [delete]
-func (h *APIHandler) RemoveServiceFromOrder(c *gin.Context) {
-	orderIDStr := c.Param("order_id")
+// @Router /api/licenseCalculationRequest-services/{licenseCalculationRequest_id}/{service_id} [delete]
+func (h *APIHandler) RemoveServiceFromLicenseCalculationRequest(c *gin.Context) {
+	licenseCalculationRequestIDStr := c.Param("licenseCalculationRequest_id")
 	serviceIDStr := c.Param("service_id")
 
-	orderID, err1 := strconv.ParseUint(orderIDStr, 10, 32)
+	licenseCalculationRequestID, err1 := strconv.ParseUint(licenseCalculationRequestIDStr, 10, 32)
 	serviceID, err2 := strconv.ParseUint(serviceIDStr, 10, 32)
 
-	if err1 != nil || err2 != nil || orderID == 0 || serviceID == 0 {
+	if err1 != nil || err2 != nil || licenseCalculationRequestID == 0 || serviceID == 0 {
 		h.errorResponse(c, http.StatusBadRequest, "Неверные ID")
 		return
 	}
 
-	err := h.Repository.RemoveServiceFromOrder(uint(orderID), uint(serviceID))
+	err := h.Repository.RemoveServiceFromLicenseCalculationRequest(uint(licenseCalculationRequestID), uint(serviceID))
 	if err != nil {
-		logrus.Error("Error removing service from order: ", err)
+		logrus.Error("Error removing service from licenseCalculationRequest: ", err)
 		h.errorResponse(c, http.StatusInternalServerError, "Ошибка удаления услуги из заявки")
 		return
 	}
 
-	h.successResponse(c, http.StatusOK, "Услуга удалена из заявки", nil)
+	h.successResponse(c, http.StatusOK, "Лицензия удалена из заявки", nil)
 }
 
-// UpdateOrderService обновляет коэффициент поддержки
+// UpdateLicensePaymentRequestService обновляет коэффициент поддержки
 // @Summary Обновление коэффициента поддержки
 // @Description Изменяет коэффициент поддержки для услуги в заявке
-// @Tags Order-Services
+// @Tags LicenseCalculationRequest-Services
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param order_id path int true "ID заявки"
+// @Param licenseCalculationRequest_id path int true "ID заявки"
 // @Param service_id path int true "ID услуги"
-// @Param request body dto.UpdateOrderServiceRequest true "Данные для обновления"
+// @Param request body dto.UpdateLicensePaymentRequestServiceRequest true "Данные для обновления"
 // @Success 200 {object} dto.SuccessResponse
 // @Failure 400 {object} dto.ErrorResponse
 // @Failure 500 {object} dto.ErrorResponse
-// @Router /api/order-services/{order_id}/{service_id} [put]
-func (h *APIHandler) UpdateOrderService(c *gin.Context) {
-	orderIDStr := c.Param("order_id")
+// @Router /api/licenseCalculationRequest-services/{licenseCalculationRequest_id}/{service_id} [put]
+func (h *APIHandler) UpdateLicensePaymentRequestService(c *gin.Context) {
+	licenseCalculationRequestIDStr := c.Param("licenseCalculationRequest_id")
 	serviceIDStr := c.Param("service_id")
 
-	orderID, err1 := strconv.ParseUint(orderIDStr, 10, 32)
+	licenseCalculationRequestID, err1 := strconv.ParseUint(licenseCalculationRequestIDStr, 10, 32)
 	serviceID, err2 := strconv.ParseUint(serviceIDStr, 10, 32)
 
-	if err1 != nil || err2 != nil || orderID == 0 || serviceID == 0 {
+	if err1 != nil || err2 != nil || licenseCalculationRequestID == 0 || serviceID == 0 {
 		h.errorResponse(c, http.StatusBadRequest, "Неверные ID")
 		return
 	}
 
-	var req dto.UpdateOrderServiceRequest
+	var req dto.UpdateLicensePaymentRequestServiceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.errorResponse(c, http.StatusBadRequest, "Неверные данные: "+err.Error())
 		return
 	}
 
-	err := h.Repository.UpdateServiceSupportLevel(uint(orderID), uint(serviceID), req.SupportLevel)
+	err := h.Repository.UpdateServiceSupportLevel(uint(licenseCalculationRequestID), uint(serviceID), req.SupportLevel)
 	if err != nil {
 		logrus.Error("Error updating support level: ", err)
 		h.errorResponse(c, http.StatusInternalServerError, "Ошибка обновления коэффициента")

@@ -345,7 +345,7 @@
 									"top": 421,
 									"width": 261.130859375,
 									"height": 13,
-									"text": "OrderService"
+									"text": "LicensePaymentRequestService"
 								},
 								{
 									"_type": "ERDColumnCompartmentView",
@@ -1156,7 +1156,7 @@
 					"_parent": {
 						"$ref": "AAAAAAGZJc/al5ICWvs="
 					},
-					"name": "OrderService",
+					"name": "LicensePaymentRequestService",
 					"columns": [
 						{
 							"_type": "ERDColumn",
@@ -1175,7 +1175,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGZJdcU2JIkXPY="
 							},
-							"name": "order_id",
+							"name": "licenseCalculationRequest_id",
 							"type": "INTEGER",
 							"foreignKey": true
 						},
@@ -2723,7 +2723,7 @@
 											"top": 728,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+GET    api/orders/cart()",
+											"text": "+GET    api/licenseCalculationRequests/cart()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -2741,7 +2741,7 @@
 											"top": 743,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+GET    api/orders()",
+											"text": "+GET    api/licenseCalculationRequests()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -2759,7 +2759,7 @@
 											"top": 758,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+GET drone_orders/<int:pk>()",
+											"text": "+GET drone_licenseCalculationRequests/<int:pk>()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -2777,7 +2777,7 @@
 											"top": 773,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+PUT    /api/orders/<int:pk>()",
+											"text": "+PUT    /api/licenseCalculationRequests/<int:pk>()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -2795,7 +2795,7 @@
 											"top": 788,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+PUT    /api/orders/<int:pk>/format()",
+											"text": "+PUT    /api/licenseCalculationRequests/<int:pk>/format()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -2813,7 +2813,7 @@
 											"top": 803,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+PUT    /api/orders/<int:pk>/complete()",
+											"text": "+PUT    /api/licenseCalculationRequests/<int:pk>/complete()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -2831,7 +2831,7 @@
 											"top": 818,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+DELETE /api/orders/<int:pk>()",
+											"text": "+DELETE /api/licenseCalculationRequests/<int:pk>()",
 											"horizontalAlignment": 0
 										}
 									],
@@ -4886,7 +4886,7 @@
 											"top": 1167,
 											"width": 140.4580078125,
 											"height": 13,
-											"text": "OrderService"
+											"text": "LicensePaymentRequestService"
 										},
 										{
 											"_type": "LabelView",
@@ -7200,7 +7200,7 @@
 											"top": 951,
 											"width": 82.66259765625,
 											"height": 13,
-											"text": "OrderService"
+											"text": "LicensePaymentRequestService"
 										},
 										{
 											"_type": "LabelView",
@@ -7767,7 +7767,7 @@
 											"top": 503,
 											"width": 234.365234375,
 											"height": 13,
-											"text": "OrderService"
+											"text": "LicensePaymentRequestService"
 										},
 										{
 											"_type": "LabelView",
@@ -7859,7 +7859,7 @@
 											"top": 536,
 											"width": 234.365234375,
 											"height": 13,
-											"text": "+PUT    /api/order-services/:oid/:sid()",
+											"text": "+PUT    /api/licenseCalculationRequest-services/:oid/:sid()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -7877,7 +7877,7 @@
 											"top": 551,
 											"width": 234.365234375,
 											"height": 13,
-											"text": "+DELETE /api/order-services/:oid/:sid()",
+											"text": "+DELETE /api/licenseCalculationRequest-services/:oid/:sid()",
 											"horizontalAlignment": 0
 										}
 									],
@@ -8194,7 +8194,7 @@
 											"top": 722,
 											"width": 260.74609375,
 											"height": 13,
-											"text": "+POST   /api/services/<int:pk>/add-to-order()",
+											"text": "+POST   /api/services/<int:pk>/add-to-licenseCalculationRequest()",
 											"horizontalAlignment": 0
 										}
 									],
@@ -8454,7 +8454,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaByCeTV+xpcE="
 							},
-							"name": "OrderService",
+							"name": "LicensePaymentRequestService",
 							"ownedElements": [
 								{
 									"_type": "UMLInterfaceRealization",
@@ -8529,7 +8529,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaBz3Ikn0p62g="
 									},
-									"name": "PUT    /api/order-services/:oid/:sid"
+									"name": "PUT    /api/licenseCalculationRequest-services/:oid/:sid"
 								},
 								{
 									"_type": "UMLOperation",
@@ -8537,7 +8537,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaBz3Ikn0p62g="
 									},
-									"name": "DELETE /api/order-services/:oid/:sid"
+									"name": "DELETE /api/licenseCalculationRequest-services/:oid/:sid"
 								}
 							]
 						},
@@ -8631,7 +8631,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaB0Bc2H1kG0E="
 									},
-									"name": "POST   /api/services/<int:pk>/add-to-order"
+									"name": "POST   /api/services/<int:pk>/add-to-licenseCalculationRequest"
 								}
 							]
 						},
@@ -8690,7 +8690,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaBzhv73y6Dog="
 									},
-									"name": "GET    api/orders/cart"
+									"name": "GET    api/licenseCalculationRequests/cart"
 								},
 								{
 									"_type": "UMLOperation",
@@ -8698,7 +8698,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaBzhv73y6Dog="
 									},
-									"name": "GET    api/orders"
+									"name": "GET    api/licenseCalculationRequests"
 								},
 								{
 									"_type": "UMLOperation",
@@ -8706,7 +8706,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaBzhv73y6Dog="
 									},
-									"name": "GET drone_orders/<int:pk>"
+									"name": "GET drone_licenseCalculationRequests/<int:pk>"
 								},
 								{
 									"_type": "UMLOperation",
@@ -8714,7 +8714,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaBzhv73y6Dog="
 									},
-									"name": "PUT    /api/orders/<int:pk>"
+									"name": "PUT    /api/licenseCalculationRequests/<int:pk>"
 								},
 								{
 									"_type": "UMLOperation",
@@ -8722,7 +8722,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaBzhv73y6Dog="
 									},
-									"name": "PUT    /api/orders/<int:pk>/format"
+									"name": "PUT    /api/licenseCalculationRequests/<int:pk>/format"
 								},
 								{
 									"_type": "UMLOperation",
@@ -8730,7 +8730,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaBzhv73y6Dog="
 									},
-									"name": "PUT    /api/orders/<int:pk>/complete"
+									"name": "PUT    /api/licenseCalculationRequests/<int:pk>/complete"
 								},
 								{
 									"_type": "UMLOperation",
@@ -8738,7 +8738,7 @@
 									"_parent": {
 										"$ref": "AAAAAAGaBzhv73y6Dog="
 									},
-									"name": "DELETE /api/orders/<int:pk>"
+									"name": "DELETE /api/licenseCalculationRequests/<int:pk>"
 								}
 							]
 						}
@@ -8781,7 +8781,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaByHddWCsUBI="
 							},
-							"name": "OrderService",
+							"name": "LicensePaymentRequestService",
 							"ownedElements": [
 								{
 									"_type": "UMLDependency",
@@ -8899,7 +8899,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaByIj0GDHMcE="
 							},
-							"name": "OrderService"
+							"name": "LicensePaymentRequestService"
 						},
 						{
 							"_type": "UMLClass",
@@ -10081,7 +10081,7 @@
 												"$ref": "AAAAAAGaCSaUhZ5I8vE="
 											},
 											"edgePosition": 1,
-											"text": "5 : POST /api/orders/draft/add(service_id)"
+											"text": "5 : POST /api/licenseCalculationRequests/draft/add(service_id)"
 										},
 										{
 											"_type": "EdgeLabelView",
@@ -10547,7 +10547,7 @@
 												"$ref": "AAAAAAGaCSaUhp5SnwQ="
 											},
 											"edgePosition": 1,
-											"text": "9 : GET /api/orders/draft/cart()"
+											"text": "9 : GET /api/licenseCalculationRequests/draft/cart()"
 										},
 										{
 											"_type": "EdgeLabelView",
@@ -10780,7 +10780,7 @@
 												"$ref": "AAAAAAGaCSaUhp5cbj4="
 											},
 											"edgePosition": 1,
-											"text": "11 : 11 : PUT /api/orders/:id(users, cores, period)"
+											"text": "11 : 11 : PUT /api/licenseCalculationRequests/:id(users, cores, period)"
 										},
 										{
 											"_type": "EdgeLabelView",
@@ -11013,7 +11013,7 @@
 												"$ref": "AAAAAAGaCSaUhp5meKs="
 											},
 											"edgePosition": 1,
-											"text": "13 : PUT /api/orders/:id/form()"
+											"text": "13 : PUT /api/licenseCalculationRequests/:id/form()"
 										},
 										{
 											"_type": "EdgeLabelView",
@@ -11246,7 +11246,7 @@
 												"$ref": "AAAAAAGaCTVWF6BOemQ="
 											},
 											"edgePosition": 1,
-											"text": "15 : GET /api/orders()"
+											"text": "15 : GET /api/licenseCalculationRequests()"
 										},
 										{
 											"_type": "EdgeLabelView",
@@ -11604,7 +11604,7 @@
 												"$ref": "AAAAAAGaCSaUhp53Bmk="
 											},
 											"edgePosition": 1,
-											"text": "17 : PUT /api/orders/:id/complete(moderator_id)"
+											"text": "17 : PUT /api/licenseCalculationRequests/:id/complete(moderator_id)"
 										},
 										{
 											"_type": "EdgeLabelView",
@@ -11837,7 +11837,7 @@
 												"$ref": "AAAAAAGaCSaUhp6BRgY="
 											},
 											"edgePosition": 1,
-											"text": "19 : GET /api/orders()"
+											"text": "19 : GET /api/licenseCalculationRequests()"
 										},
 										{
 											"_type": "EdgeLabelView",
@@ -12107,7 +12107,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaCSaUhZ3/BxQ="
 							},
-							"name": "POST /api/orders/draft/add(service_id)",
+							"name": "POST /api/licenseCalculationRequests/draft/add(service_id)",
 							"source": {
 								"$ref": "AAAAAAGaCSaUhp6f8BY="
 							},
@@ -12165,7 +12165,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaCSaUhZ3/BxQ="
 							},
-							"name": "GET /api/orders/draft/cart()",
+							"name": "GET /api/licenseCalculationRequests/draft/cart()",
 							"source": {
 								"$ref": "AAAAAAGaCSaUhp6f8BY="
 							},
@@ -12194,7 +12194,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaCSaUhZ3/BxQ="
 							},
-							"name": "11 : PUT /api/orders/:id(users, cores, period)",
+							"name": "11 : PUT /api/licenseCalculationRequests/:id(users, cores, period)",
 							"source": {
 								"$ref": "AAAAAAGaCSaUhp6f8BY="
 							},
@@ -12223,7 +12223,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaCSaUhZ3/BxQ="
 							},
-							"name": "PUT /api/orders/:id/form()",
+							"name": "PUT /api/licenseCalculationRequests/:id/form()",
 							"source": {
 								"$ref": "AAAAAAGaCSaUhp6f8BY="
 							},
@@ -12252,7 +12252,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaCSaUhZ3/BxQ="
 							},
-							"name": "GET /api/orders()",
+							"name": "GET /api/licenseCalculationRequests()",
 							"source": {
 								"$ref": "AAAAAAGaCSaUhp6f8BY="
 							},
@@ -12281,7 +12281,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaCSaUhZ3/BxQ="
 							},
-							"name": "PUT /api/orders/:id/complete(moderator_id)",
+							"name": "PUT /api/licenseCalculationRequests/:id/complete(moderator_id)",
 							"source": {
 								"$ref": "AAAAAAGaCSaUhp6kvr8="
 							},
@@ -12310,7 +12310,7 @@
 							"_parent": {
 								"$ref": "AAAAAAGaCSaUhZ3/BxQ="
 							},
-							"name": "GET /api/orders()",
+							"name": "GET /api/licenseCalculationRequests()",
 							"source": {
 								"$ref": "AAAAAAGaCSaUhp6f8BY="
 							},
@@ -14121,7 +14121,7 @@
 											"top": 911,
 											"width": 234.365234375,
 											"height": 13,
-											"text": "OrderService"
+											"text": "LicensePaymentRequestService"
 										},
 										{
 											"_type": "LabelView",
@@ -14213,7 +14213,7 @@
 											"top": 944,
 											"width": 234.365234375,
 											"height": 13,
-											"text": "+PUT    /api/order-services/:oid/:sid()",
+											"text": "+PUT    /api/licenseCalculationRequest-services/:oid/:sid()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -14231,7 +14231,7 @@
 											"top": 959,
 											"width": 234.365234375,
 											"height": 13,
-											"text": "+DELETE /api/order-services/:oid/:sid()",
+											"text": "+DELETE /api/licenseCalculationRequest-services/:oid/:sid()",
 											"horizontalAlignment": 0
 										}
 									],
@@ -14548,7 +14548,7 @@
 											"top": 690,
 											"width": 260.74609375,
 											"height": 13,
-											"text": "+POST   /api/services/<int:pk>/add-to-order()",
+											"text": "+POST   /api/services/<int:pk>/add-to-licenseCalculationRequest()",
 											"horizontalAlignment": 0
 										}
 									],
@@ -14757,7 +14757,7 @@
 											"top": 760,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+GET    api/orders/cart()",
+											"text": "+GET    api/licenseCalculationRequests/cart()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -14775,7 +14775,7 @@
 											"top": 775,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+GET    api/orders()",
+											"text": "+GET    api/licenseCalculationRequests()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -14793,7 +14793,7 @@
 											"top": 790,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+GET drone_orders/<int:pk>()",
+											"text": "+GET drone_licenseCalculationRequests/<int:pk>()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -14811,7 +14811,7 @@
 											"top": 805,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+PUT    /api/orders/<int:pk>()",
+											"text": "+PUT    /api/licenseCalculationRequests/<int:pk>()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -14829,7 +14829,7 @@
 											"top": 820,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+PUT    /api/orders/<int:pk>/format()",
+											"text": "+PUT    /api/licenseCalculationRequests/<int:pk>/format()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -14847,7 +14847,7 @@
 											"top": 835,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+PUT    /api/orders/<int:pk>/complete()",
+											"text": "+PUT    /api/licenseCalculationRequests/<int:pk>/complete()",
 											"horizontalAlignment": 0
 										},
 										{
@@ -14865,7 +14865,7 @@
 											"top": 850,
 											"width": 232.93701171875,
 											"height": 13,
-											"text": "+DELETE /api/orders/<int:pk>()",
+											"text": "+DELETE /api/licenseCalculationRequests/<int:pk>()",
 											"horizontalAlignment": 0
 										}
 									],

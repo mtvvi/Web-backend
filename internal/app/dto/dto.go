@@ -15,7 +15,7 @@ type SuccessResponse struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-// ============ Услуги (License Services) ============
+// ============ Лицензии (License Services) ============
 
 type ServiceResponse struct {
 	ID          uint    `json:"id"`
@@ -45,29 +45,29 @@ type UpdateServiceRequest struct {
 	LicenseType string  `json:"license_type" binding:"omitempty,oneof=per_user per_core subscription"`
 }
 
-type AddServiceToOrderRequest struct {
+type AddServiceToLicenseCalculationRequestRequest struct {
 	ServiceID uint `json:"service_id" binding:"required"`
 }
 
-// ============ Заявки (License Orders) ============
+// ============ Заявки (License LicenseCalculationRequests) ============
 
-type OrderResponse struct {
-	ID          uint                 `json:"id"`
-	Status      string               `json:"status"`
-	CreatedAt   time.Time            `json:"created_at"`
-	FormattedAt *time.Time           `json:"formatted_at,omitempty"`
-	CompletedAt *time.Time           `json:"completed_at,omitempty"`
-	Creator     string               `json:"creator"`   // Логин создателя
-	Moderator   string               `json:"moderator"` // Логин модератора (если есть)
-	Users       int                  `json:"users"`
-	Cores       int                  `json:"cores"`
-	Period      int                  `json:"period"`
-	TotalCost   float64              `json:"total_cost,omitempty"`
-	Services    []ServiceInOrderResp `json:"services,omitempty"`       // Только для GET одной заявки
-	ReadyCount  int                  `json:"ready_services,omitempty"` // Кол-во услуг с готовым async результатом
+type LicenseCalculationRequestResponse struct {
+	ID          uint                                     `json:"id"`
+	Status      string                                   `json:"status"`
+	CreatedAt   time.Time                                `json:"created_at"`
+	FormattedAt *time.Time                               `json:"formatted_at,omitempty"`
+	CompletedAt *time.Time                               `json:"completed_at,omitempty"`
+	Creator     string                                   `json:"creator"`   // Логин создателя
+	Moderator   string                                   `json:"moderator"` // Логин модератора (если есть)
+	Users       int                                      `json:"users"`
+	Cores       int                                      `json:"cores"`
+	Period      int                                      `json:"period"`
+	TotalCost   float64                                  `json:"total_cost,omitempty"`
+	Services    []ServiceInLicenseCalculationRequestResp `json:"services,omitempty"`       // Только для GET одной заявки
+	ReadyCount  int                                      `json:"ready_services,omitempty"` // Кол-во услуг с готовым async результатом
 }
 
-type ServiceInOrderResp struct {
+type ServiceInLicenseCalculationRequestResp struct {
 	ID           uint    `json:"id"`
 	Name         string  `json:"name"`
 	Description  string  `json:"description"`
@@ -78,25 +78,25 @@ type ServiceInOrderResp struct {
 	SubTotal     float64 `json:"subtotal"`
 }
 
-type OrderListResponse struct {
-	Orders []OrderResponse `json:"orders"`
-	Total  int             `json:"total"`
+type LicenseCalculationRequestListResponse struct {
+	LicenseCalculationRequests []LicenseCalculationRequestResponse `json:"licenseCalculationRequests"`
+	Total                      int                                 `json:"total"`
 }
 
 type CartResponse struct {
-	OrderID      uint `json:"order_id"`      // ID черновика заявки
-	ServiceCount int  `json:"service_count"` // Количество услуг в корзине
+	LicenseCalculationRequestID uint `json:"licenseCalculationRequest_id"` // ID черновика заявки
+	ServiceCount                int  `json:"service_count"`                // Количество услуг в корзине
 }
 
-type UpdateOrderFieldsRequest struct {
+type UpdateLicenseCalculationRequestFieldsRequest struct {
 	Users  *int `json:"user_count" binding:"omitempty,gte=0"`
 	Cores  *int `json:"core_count" binding:"omitempty,gte=0"`
 	Period *int `json:"period" binding:"omitempty,gte=1"`
 }
 
-// ============ М-М связь (Order Services) ============
+// ============ М-М связь (LicenseCalculationRequest Services) ============
 
-type UpdateOrderServiceRequest struct {
+type UpdateLicensePaymentRequestServiceRequest struct {
 	SupportLevel float64 `json:"support_level" binding:"required,gte=0.7,lte=3.0"`
 }
 

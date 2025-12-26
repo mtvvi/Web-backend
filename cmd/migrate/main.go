@@ -32,8 +32,8 @@ func main() {
 	err = db.AutoMigrate(
 		&ds.User{},
 		&ds.LicenseService{},
-		&ds.LicenseOrder{},
-		&ds.OrderService{},
+		&ds.LicensePaymentRequest{},
+		&ds.LicensePaymentRequestService{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)

@@ -22,8 +22,8 @@ func New(dsn string) (*Repository, error) {
 	err = db.AutoMigrate(
 		&ds.User{},
 		&ds.LicenseService{},
-		&ds.LicenseOrder{},
-		&ds.OrderService{},
+		&ds.LicensePaymentRequest{},
+		&ds.LicensePaymentRequestService{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)

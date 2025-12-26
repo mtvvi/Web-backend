@@ -228,7 +228,7 @@
 			]
 		},
 		{
-			"name": "Услуги",
+			"name": "Лицензии",
 			"item": [
 				{
 					"name": "Список услуг",
@@ -335,9 +335,9 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/services/1/add-to-order",
+							"raw": "{{base_url}}/api/services/1/add-to-licenseCalculationRequest",
 							"host": ["{{base_url}}"],
-							"path": ["api", "services", "1", "add-to-order"]
+							"path": ["api", "services", "1", "add-to-licenseCalculationRequest"]
 						}
 					},
 					"response": []
@@ -377,9 +377,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders/cart",
+							"raw": "{{base_url}}/api/licenseCalculationRequests/cart",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders", "cart"]
+							"path": ["api", "licenseCalculationRequests", "cart"]
 						},
 						"description": "Возвращает ID черновика текущего пользователя и количество услуг в нем"
 					},
@@ -391,9 +391,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders",
+							"raw": "{{base_url}}/api/licenseCalculationRequests",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders"]
+							"path": ["api", "licenseCalculationRequests"]
 						},
 						"description": "Возвращает заявки кроме удаленных и черновиков. Buyer видит только свои, Admin видит все"
 					},
@@ -405,9 +405,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders?status=сформирован",
+							"raw": "{{base_url}}/api/licenseCalculationRequests?status=сформирован",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders"],
+							"path": ["api", "licenseCalculationRequests"],
 							"query": [
 								{"key": "status", "value": "сформирован"}
 							]
@@ -421,9 +421,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders?date_from=2024-01-01&date_to=2025-12-31",
+							"raw": "{{base_url}}/api/licenseCalculationRequests?date_from=2024-01-01&date_to=2025-12-31",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders"],
+							"path": ["api", "licenseCalculationRequests"],
 							"query": [
 								{"key": "date_from", "value": "2024-01-01"},
 								{"key": "date_to", "value": "2025-12-31"}
@@ -438,9 +438,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders?status=завершен&date_from=2024-10-01&date_to=2025-10-31",
+							"raw": "{{base_url}}/api/licenseCalculationRequests?status=завершен&date_from=2024-10-01&date_to=2025-10-31",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders"],
+							"path": ["api", "licenseCalculationRequests"],
 							"query": [
 								{"key": "status", "value": "завершен"},
 								{"key": "date_from", "value": "2024-10-01"},
@@ -456,9 +456,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders/1",
+							"raw": "{{base_url}}/api/licenseCalculationRequests/1",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders", "1"]
+							"path": ["api", "licenseCalculationRequests", "1"]
 						},
 						"description": "Возвращает поля заявки + список услуг с изображениями"
 					},
@@ -474,9 +474,9 @@
 							"raw": "{\n  \"users\": 20,\n  \"cores\": 16,\n  \"period\": 3\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/orders/1",
+							"raw": "{{base_url}}/api/licenseCalculationRequests/1",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders", "1"]
+							"path": ["api", "licenseCalculationRequests", "1"]
 						},
 						"description": "Изменение полей: users, cores, period"
 					},
@@ -488,9 +488,9 @@
 						"method": "PUT",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders/1/format",
+							"raw": "{{base_url}}/api/licenseCalculationRequests/1/format",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders", "1", "format"]
+							"path": ["api", "licenseCalculationRequests", "1", "format"]
 						},
 						"description": "Проверяет обязательные поля и меняет статус на 'сформирован'. Проставляется дата формирования"
 					},
@@ -502,9 +502,9 @@
 						"method": "PUT",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders/2/complete",
+							"raw": "{{base_url}}/api/licenseCalculationRequests/2/complete",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders", "2", "complete"]
+							"path": ["api", "licenseCalculationRequests", "2", "complete"]
 						},
 						"description": "Проставляется модератор, дата завершения. Рассчитывается стоимость и дата доставки"
 					},
@@ -516,9 +516,9 @@
 						"method": "PUT",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders/3/reject",
+							"raw": "{{base_url}}/api/licenseCalculationRequests/3/reject",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders", "3", "reject"]
+							"path": ["api", "licenseCalculationRequests", "3", "reject"]
 						},
 						"description": "Проставляется модератор, дата завершения, статус 'отклонен'"
 					},
@@ -530,9 +530,9 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders/1",
+							"raw": "{{base_url}}/api/licenseCalculationRequests/1",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders", "1"]
+							"path": ["api", "licenseCalculationRequests", "1"]
 						},
 						"description": "Удаление заявки (мягкое удаление или проверка статуса)"
 					},
@@ -541,7 +541,7 @@
 			]
 		},
 		{
-			"name": "Услуги в заявке",
+			"name": "Лицензии в заявке",
 			"item": [
 				{
 					"name": "Изменить коэффициент поддержки",
@@ -553,11 +553,11 @@
 							"raw": "{\n  \"support_level\": 1.5\n}"
 						},
 						"url": {
-							"raw": "{{base_url}}/api/order-services/1/1",
+							"raw": "{{base_url}}/api/licenseCalculationRequest-services/1/1",
 							"host": ["{{base_url}}"],
-							"path": ["api", "order-services", "1", "1"]
+							"path": ["api", "licenseCalculationRequest-services", "1", "1"]
 						},
-						"description": "Изменение значений в связи М-М (без PK, через order_id/service_id)"
+						"description": "Изменение значений в связи М-М (без PK, через licenseCalculationRequest_id/service_id)"
 					},
 					"response": []
 				},
@@ -567,11 +567,11 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/order-services/1/2",
+							"raw": "{{base_url}}/api/licenseCalculationRequest-services/1/2",
 							"host": ["{{base_url}}"],
-							"path": ["api", "order-services", "1", "2"]
+							"path": ["api", "licenseCalculationRequest-services", "1", "2"]
 						},
-						"description": "Удаление услуги из заявки (без PK М-М, через order_id/service_id)"
+						"description": "Удаление услуги из заявки (без PK М-М, через licenseCalculationRequest_id/service_id)"
 					},
 					"response": []
 				}
@@ -589,9 +589,9 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/services/1/add-to-order",
+							"raw": "{{base_url}}/api/services/1/add-to-licenseCalculationRequest",
 							"host": ["{{base_url}}"],
-							"path": ["api", "services", "1", "add-to-order"]
+							"path": ["api", "services", "1", "add-to-licenseCalculationRequest"]
 						},
 						"description": "Попытка защищенного действия без авторизации"
 					},
@@ -621,9 +621,9 @@
 						"method": "PUT",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/orders/1/complete",
+							"raw": "{{base_url}}/api/licenseCalculationRequests/1/complete",
 							"host": ["{{base_url}}"],
-							"path": ["api", "orders", "1", "complete"]
+							"path": ["api", "licenseCalculationRequests", "1", "complete"]
 						},
 						"description": "Buyer пытается завершить заявку (только Admin)"
 					},

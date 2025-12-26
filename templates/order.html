@@ -34,8 +34,8 @@
                             Добавить в заявку
                         </button>
                         <div style="font-size: 14px; color: #666; text-align: center; margin-top: 15px;">
-                            {{ if gt .draftOrderID 0 }}
-                            <a href="/license-calculator/{{ .draftOrderID }}" style="color: #007bff; text-decoration: none;">
+                            {{ if gt .draftLicenseCalculationRequestID 0 }}
+                            <a href="/license-calculator/{{ .draftLicenseCalculationRequestID }}" style="color: #007bff; text-decoration: none;">
                                 → Перейти к калькулятору для расчета стоимости
                             </a>
                             {{ else }}

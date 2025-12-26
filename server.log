@@ -1,0 +1,58 @@
+2025/12/26 04:35:54 App start
+time="2025-12-26T04:35:54+03:00" level=info msg="config parsed"
+time="2025-12-26T04:35:54+03:00" level=info msg="Redis client initialized successfully"
+time="2025-12-26T04:35:54+03:00" level=info msg="MinIO client initialized successfully"
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /swagger/*any             --> github.com/swaggo/gin-swagger.CustomWrapHandler.func1 (4 handlers)
+[GIN-debug] GET    /docs/*any                --> main.main.func1 (4 handlers)
+[GIN-debug] Loaded HTML Templates (4): 
+	- 
+	- license_calculator.html
+	- license_models.html
+	- order.html
+
+[GIN-debug] GET    /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (4 handlers)
+[GIN-debug] HEAD   /static/*filepath         --> github.com/gin-gonic/gin.(*RouterGroup).createStaticHandler.func1 (4 handlers)
+[GIN-debug] GET    /license-models           --> backend/internal/app/handler.(*Handler).GetLicenseModels-fm (4 handlers)
+[GIN-debug] GET    /model/:id                --> backend/internal/app/handler.(*Handler).GetLicenseModelDetail-fm (4 handlers)
+[GIN-debug] GET    /license-calculator/:id   --> backend/internal/app/handler.(*Handler).GetLicenseCalculator-fm (4 handlers)
+[GIN-debug] POST   /model/:id/add-to-cart    --> backend/internal/app/handler.(*Handler).AddModelToCart-fm (4 handlers)
+[GIN-debug] POST   /request/:id/delete       --> backend/internal/app/handler.(*Handler).DeleteLicenseRequest-fm (4 handlers)
+[GIN-debug] POST   /calculator/:id/update    --> backend/internal/app/handler.(*Handler).UpdateCalculatorParams-fm (4 handlers)
+[GIN-debug] GET    /api/services             --> backend/internal/app/handler.(*APIHandler).GetServices-fm (4 handlers)
+[GIN-debug] GET    /api/services/:id         --> backend/internal/app/handler.(*APIHandler).GetService-fm (4 handlers)
+[GIN-debug] POST   /api/services/:id/add-to-licenseCalculationRequest --> backend/internal/app/handler.(*APIHandler).AddServiceToLicenseCalculationRequest-fm (5 handlers)
+[GIN-debug] POST   /api/services             --> backend/internal/app/handler.(*APIHandler).CreateService-fm (5 handlers)
+[GIN-debug] PUT    /api/services/:id         --> backend/internal/app/handler.(*APIHandler).UpdateService-fm (5 handlers)
+[GIN-debug] DELETE /api/services/:id         --> backend/internal/app/handler.(*APIHandler).DeleteService-fm (5 handlers)
+[GIN-debug] POST   /api/services/:id/image   --> backend/internal/app/handler.(*APIHandler).UploadServiceImage-fm (5 handlers)
+[GIN-debug] GET    /api/licenseCalculationRequests/cart --> backend/internal/app/handler.(*APIHandler).GetCart-fm (5 handlers)
+[GIN-debug] GET    /api/licenseCalculationRequests --> backend/internal/app/handler.(*APIHandler).GetLicenseCalculationRequests-fm (5 handlers)
+[GIN-debug] GET    /api/licenseCalculationRequests/:id --> backend/internal/app/handler.(*APIHandler).GetLicenseCalculationRequest-fm (5 handlers)
+[GIN-debug] PUT    /api/licenseCalculationRequests/:id --> backend/internal/app/handler.(*APIHandler).UpdateLicenseCalculationRequestFields-fm (5 handlers)
+[GIN-debug] PUT    /api/licenseCalculationRequests/:id/format --> backend/internal/app/handler.(*APIHandler).FormatLicenseCalculationRequest-fm (5 handlers)
+[GIN-debug] DELETE /api/licenseCalculationRequests/:id --> backend/internal/app/handler.(*APIHandler).DeleteLicenseCalculationRequest-fm (5 handlers)
+[GIN-debug] PUT    /api/licenseCalculationRequests/:id/complete --> backend/internal/app/handler.(*APIHandler).CompleteLicenseCalculationRequest-fm (5 handlers)
+[GIN-debug] PUT    /api/licenseCalculationRequests/:id/reject --> backend/internal/app/handler.(*APIHandler).RejectLicenseCalculationRequest-fm (5 handlers)
+[GIN-debug] DELETE /api/licenseCalculationRequest-services/:licenseCalculationRequest_id/:service_id --> backend/internal/app/handler.(*APIHandler).RemoveServiceFromLicenseCalculationRequest-fm (5 handlers)
+[GIN-debug] PUT    /api/licenseCalculationRequest-services/:licenseCalculationRequest_id/:service_id --> backend/internal/app/handler.(*APIHandler).UpdateLicensePaymentRequestService-fm (5 handlers)
+[GIN-debug] POST   /api/auth/register        --> backend/internal/app/handler.(*AuthHandler).RegisterUser-fm (4 handlers)
+[GIN-debug] POST   /api/auth/login           --> backend/internal/app/handler.(*AuthHandler).LoginUser-fm (4 handlers)
+[GIN-debug] POST   /api/auth/session-login   --> backend/internal/app/handler.(*AuthHandler).SessionLoginUser-fm (4 handlers)
+[GIN-debug] POST   /api/auth/session-logout  --> backend/internal/app/handler.(*AuthHandler).SessionLogoutUser-fm (4 handlers)
+[GIN-debug] GET    /api/auth/profile         --> backend/internal/app/handler.(*AuthHandler).GetUserProfile-fm (5 handlers)
+[GIN-debug] PUT    /api/auth/profile         --> backend/internal/app/handler.(*APIHandler).UpdateProfile-fm (5 handlers)
+[GIN-debug] POST   /api/auth/logout          --> backend/internal/app/handler.(*AuthHandler).LogoutUser-fm (5 handlers)
+[GIN-debug] PUT    /api/async/licenseCalculationRequests/:licenseCalculationRequest_id/services/:service_id/subtotal --> backend/internal/app/handler.(*APIHandler).ReceiveSubtotalResult-fm (4 handlers)
+[GIN-debug] GET    /ping                     --> backend/internal/app/handler.(*APIHandler).Ping-fm (4 handlers)
+time="2025-12-26T04:35:54+03:00" level=info msg="Starting server on 0.0.0.0:8080"
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on 0.0.0.0:8080
+[GIN-debug] [ERROR] listen tcp 0.0.0.0:8080: bind: address already in use
+time="2025-12-26T04:35:54+03:00" level=fatal msg="listen tcp 0.0.0.0:8080: bind: address already in use"

@@ -11,8 +11,8 @@
     </div>
     
     <div class="cart-header">
-        {{ if gt .draftOrderID 0 }}
-        <a href="/license-calculator/{{ .draftOrderID }}" class="cart">
+        {{ if gt .draftLicenseCalculationRequestID 0 }}
+        <a href="/license-calculator/{{ .draftLicenseCalculationRequestID }}" class="cart">
             <img src="https://localhost:9000/img/cart.png" alt="Корзина">
             <div class="cart-count">{{ .cartCount }}</div>
         </a>

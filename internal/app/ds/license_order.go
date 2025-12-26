@@ -3,7 +3,7 @@ package ds
 import "time"
 
 // 2. Таблица заявок - хранит общие параметры расчета для ВСЕЙ заявки
-type LicenseOrder struct {
+type LicensePaymentRequest struct {
 	ID          uint       `gorm:"primaryKey"`
 	Status      string     `gorm:"type:varchar(20);not null"` // черновик, удалён, сформирован, завершён, отклонён
 	CreatedAt   time.Time  `gorm:"not null"`

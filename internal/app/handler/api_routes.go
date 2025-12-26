@@ -12,7 +12,7 @@ func (h *APIHandler) RegisterAPIRoutes(router *gin.Engine, authMiddleware *middl
 	// REST API маршруты
 	api := router.Group("/api")
 
-	// ============ Услуги (Services) - публичные и для модераторов ============
+	// ============ Лицензии (Services) - публичные и для модераторов ============
 	services := api.Group("/services")
 	{
 		// Публичные эндпоинты (без авторизации)
@@ -20,7 +20,7 @@ func (h *APIHandler) RegisterAPIRoutes(router *gin.Engine, authMiddleware *middl
 		services.GET("/:id", h.GetService) // GET одна запись
 
 		// Для авторизованных пользователей (добавление в заявку)
-		services.POST("/:id/add-to-order", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.AddServiceToOrder)
+		services.POST("/:id/add-to-licenseCalculationRequest", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.AddServiceToLicenseCalculationRequest)
 
 		// Только для модераторов (управление услугами)
 		services.POST("", authMiddleware.WithAuthCheck(role.Admin), h.CreateService)                // POST создание
@@ -29,28 +29,28 @@ func (h *APIHandler) RegisterAPIRoutes(router *gin.Engine, authMiddleware *middl
 		services.POST("/:id/image", authMiddleware.WithAuthCheck(role.Admin), h.UploadServiceImage) // POST изображение
 	}
 
-	// ============ Заявки (Orders) - для авторизованных пользователей ============
-	orders := api.Group("/orders")
+	// ============ Заявки (LicenseCalculationRequests) - для авторизованных пользователей ============
+	licenseCalculationRequests := api.Group("/licenseCalculationRequests")
 	{
 		// Для всех авторизованных пользователей
-		orders.GET("/cart", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.GetCart)
-		orders.GET("", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.GetOrders)
-		orders.GET("/:id", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.GetOrder)
-		orders.PUT("/:id", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.UpdateOrderFields)
-		orders.PUT("/:id/format", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.FormatOrder)
-		orders.DELETE("/:id", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.DeleteOrder)
+		licenseCalculationRequests.GET("/cart", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.GetCart)
+		licenseCalculationRequests.GET("", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.GetLicenseCalculationRequests)
+		licenseCalculationRequests.GET("/:id", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.GetLicenseCalculationRequest)
+		licenseCalculationRequests.PUT("/:id", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.UpdateLicenseCalculationRequestFields)
+		licenseCalculationRequests.PUT("/:id/format", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.FormatLicenseCalculationRequest)
+		licenseCalculationRequests.DELETE("/:id", authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin), h.DeleteLicenseCalculationRequest)
 
 		// Только для модераторов
-		orders.PUT("/:id/complete", authMiddleware.WithAuthCheck(role.Admin), h.CompleteOrder) // PUT завершить
-		orders.PUT("/:id/reject", authMiddleware.WithAuthCheck(role.Admin), h.RejectOrder)     // PUT отклонить
+		licenseCalculationRequests.PUT("/:id/complete", authMiddleware.WithAuthCheck(role.Admin), h.CompleteLicenseCalculationRequest) // PUT завершить
+		licenseCalculationRequests.PUT("/:id/reject", authMiddleware.WithAuthCheck(role.Admin), h.RejectLicenseCalculationRequest)     // PUT отклонить
 	}
 
-	// М-М связь (Order Services) - для авторизованных пользователей
-	orderServices := api.Group("/order-services")
-	orderServices.Use(authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin))
+	// М-М связь (LicenseCalculationRequest Services) - для авторизованных пользователей
+	licenseCalculationRequestServices := api.Group("/licenseCalculationRequest-services")
+	licenseCalculationRequestServices.Use(authMiddleware.WithAuthCheck(role.Buyer, role.Manager, role.Admin))
 	{
-		orderServices.DELETE("/:order_id/:service_id", h.RemoveServiceFromOrder) // DELETE из заявки
-		orderServices.PUT("/:order_id/:service_id", h.UpdateOrderService)        // PUT изменение коэффициента
+		licenseCalculationRequestServices.DELETE("/:licenseCalculationRequest_id/:service_id", h.RemoveServiceFromLicenseCalculationRequest) // DELETE из заявки
+		licenseCalculationRequestServices.PUT("/:licenseCalculationRequest_id/:service_id", h.UpdateLicensePaymentRequestService)            // PUT изменение коэффициента
 	}
 
 	// ============ Аутентификация (публичные эндпоинты) ============
@@ -71,7 +71,7 @@ func (h *APIHandler) RegisterAPIRoutes(router *gin.Engine, authMiddleware *middl
 	// Асинхронные колбэки (псевдо-авторизация по ключу)
 	async := api.Group("/async")
 	{
-		async.PUT("/orders/:order_id/services/:service_id/subtotal", h.ReceiveSubtotalResult)
+		async.PUT("/licenseCalculationRequests/:licenseCalculationRequest_id/services/:service_id/subtotal", h.ReceiveSubtotalResult)
 	}
 
 	// Ping эндпоинт для проверки

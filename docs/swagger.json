@@ -854,7 +854,7 @@
                 }
             }
         },
-        "/api/order-services/{order_id}/{service_id}": {
+        "/api/licenseCalculationRequest-services/{licenseCalculationRequest_id}/{service_id}": {
             "put": {
                 "security": [
                     {
@@ -869,14 +869,14 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Order-Services"
+                    "LicenseCalculationRequest-Services"
                 ],
                 "summary": "Обновление коэффициента поддержки",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "ID заявки",
-                        "name": "order_id",
+                        "name": "licenseCalculationRequest_id",
                         "in": "path",
                         "required": true
                     },
@@ -893,7 +893,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateOrderServiceRequest"
+                            "$ref": "#/definitions/dto.UpdateLicensePaymentRequestServiceRequest"
                         }
                     }
                 ],
@@ -929,14 +929,14 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Order-Services"
+                    "LicenseCalculationRequest-Services"
                 ],
                 "summary": "Удаление услуги из заявки",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "ID заявки",
-                        "name": "order_id",
+                        "name": "licenseCalculationRequest_id",
                         "in": "path",
                         "required": true
                     },
@@ -970,7 +970,7 @@
                 }
             }
         },
-        "/api/orders": {
+        "/api/licenseCalculationRequests": {
             "get": {
                 "security": [
                     {
@@ -982,7 +982,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Получение списка заявок",
                 "parameters": [
@@ -1009,7 +1009,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.OrderListResponse"
+                            "$ref": "#/definitions/dto.LicenseCalculationRequestListResponse"
                         }
                     },
                     "500": {
@@ -1021,7 +1021,7 @@
                 }
             }
         },
-        "/api/orders/cart": {
+        "/api/licenseCalculationRequests/cart": {
             "get": {
                 "security": [
                     {
@@ -1033,7 +1033,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Получение информации о корзине",
                 "responses": {
@@ -1046,7 +1046,7 @@
                 }
             }
         },
-        "/api/orders/{id}": {
+        "/api/licenseCalculationRequests/{id}": {
             "get": {
                 "security": [
                     {
@@ -1058,7 +1058,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Получение заявки по ID",
                 "parameters": [
@@ -1074,7 +1074,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.OrderResponse"
+                            "$ref": "#/definitions/dto.LicenseCalculationRequestResponse"
                         }
                     },
                     "400": {
@@ -1105,7 +1105,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Обновление полей заявки",
                 "parameters": [
@@ -1122,7 +1122,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateOrderFieldsRequest"
+                            "$ref": "#/definitions/dto.UpdateLicenseCalculationRequestFieldsRequest"
                         }
                     }
                 ],
@@ -1152,7 +1152,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Удаление заявки",
                 "parameters": [
@@ -1180,7 +1180,7 @@
                 }
             }
         },
-        "/api/orders/{id}/complete": {
+        "/api/licenseCalculationRequests/{id}/complete": {
             "put": {
                 "security": [
                     {
@@ -1192,7 +1192,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Завершение заявки",
                 "parameters": [
@@ -1220,7 +1220,7 @@
                 }
             }
         },
-        "/api/orders/{id}/format": {
+        "/api/licenseCalculationRequests/{id}/format": {
             "put": {
                 "security": [
                     {
@@ -1232,7 +1232,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Формирование заявки",
                 "parameters": [
@@ -1260,7 +1260,7 @@
                 }
             }
         },
-        "/api/orders/{id}/reject": {
+        "/api/licenseCalculationRequests/{id}/reject": {
             "put": {
                 "security": [
                     {
@@ -1272,7 +1272,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Отклонение заявки",
                 "parameters": [
@@ -1530,7 +1530,7 @@
                 }
             }
         },
-        "/api/services/{id}/add-to-order": {
+        "/api/services/{id}/add-to-licenseCalculationRequest": {
             "post": {
                 "security": [
                     {
@@ -1766,7 +1766,7 @@
         "dto.CartResponse": {
             "type": "object",
             "properties": {
-                "order_id": {
+                "licenseCalculationRequest_id": {
                     "description": "ID черновика заявки",
                     "type": "integer"
                 },
@@ -1871,13 +1871,13 @@
                 }
             }
         },
-        "dto.OrderListResponse": {
+        "dto.LicenseCalculationRequestListResponse": {
             "type": "object",
             "properties": {
-                "orders": {
+                "licenseCalculationRequests": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.OrderResponse"
+                        "$ref": "#/definitions/dto.LicenseCalculationRequestResponse"
                     }
                 },
                 "total": {
@@ -1885,7 +1885,7 @@
                 }
             }
         },
-        "dto.OrderResponse": {
+        "dto.LicenseCalculationRequestResponse": {
             "type": "object",
             "properties": {
                 "completed_at": {
@@ -1918,7 +1918,7 @@
                     "description": "Только для GET одной заявки",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.ServiceInOrderResp"
+                        "$ref": "#/definitions/dto.ServiceInLicenseCalculationRequestResp"
                     }
                 },
                 "status": {
@@ -1957,7 +1957,7 @@
                 }
             }
         },
-        "dto.ServiceInOrderResp": {
+        "dto.ServiceInLicenseCalculationRequestResp": {
             "type": "object",
             "properties": {
                 "base_price": {
@@ -2036,7 +2036,7 @@
                 }
             }
         },
-        "dto.UpdateOrderFieldsRequest": {
+        "dto.UpdateLicenseCalculationRequestFieldsRequest": {
             "type": "object",
             "properties": {
                 "core_count": {
@@ -2053,7 +2053,7 @@
                 }
             }
         },
-        "dto.UpdateOrderServiceRequest": {
+        "dto.UpdateLicensePaymentRequestServiceRequest": {
             "type": "object",
             "required": [
                 "support_level"

@@ -66,13 +66,13 @@ func (h *Handler) GetLicenseModels(ctx *gin.Context) {
 
 	userID := uint(1)
 	cartCount := h.Repository.GetCartCount()
-	draftOrderID := h.Repository.GetDraftOrderID(userID)
+	draftLicenseCalculationRequestID := h.Repository.GetDraftLicenseCalculationRequestID(userID)
 
 	ctx.HTML(http.StatusOK, "license_models.html", gin.H{
-		"models":       services,
-		"query":        searchQuery,
-		"cartCount":    cartCount,
-		"draftOrderID": draftOrderID, // 0 если нет черновика
+		"models":                           services,
+		"query":                            searchQuery,
+		"cartCount":                        cartCount,
+		"draftLicenseCalculationRequestID": draftLicenseCalculationRequestID, // 0 если нет черновика
 	})
 }
 
@@ -81,44 +81,44 @@ func (h *Handler) GetLicenseModelDetail(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		ctx.HTML(http.StatusBadRequest, "order.html", gin.H{"error": "Invalid model ID"})
+		ctx.HTML(http.StatusBadRequest, "licenseCalculationRequest.html", gin.H{"error": "Invalid model ID"})
 		return
 	}
 
 	service, err := h.Repository.GetServiceByID(uint(id))
 	if err != nil {
-		ctx.HTML(http.StatusNotFound, "order.html", gin.H{"error": "Model not found"})
+		ctx.HTML(http.StatusNotFound, "licenseCalculationRequest.html", gin.H{"error": "Model not found"})
 		return
 	}
 
 	userID := uint(1)
-	draftOrderID := h.Repository.GetDraftOrderID(userID)
+	draftLicenseCalculationRequestID := h.Repository.GetDraftLicenseCalculationRequestID(userID)
 
-	ctx.HTML(http.StatusOK, "order.html", gin.H{
-		"model":        service,
-		"cartCount":    h.Repository.GetCartCount(),
-		"draftOrderID": draftOrderID,
+	ctx.HTML(http.StatusOK, "licenseCalculationRequest.html", gin.H{
+		"model":                            service,
+		"cartCount":                        h.Repository.GetCartCount(),
+		"draftLicenseCalculationRequestID": draftLicenseCalculationRequestID,
 	})
 }
 
 // 3. Калькулятор - показываем услуги из заявки
 func (h *Handler) GetLicenseCalculator(ctx *gin.Context) {
 	idStr := ctx.Param("id")
-	orderID, err := strconv.Atoi(idStr)
-	if err != nil || orderID == 0 {
+	licenseCalculationRequestID, err := strconv.Atoi(idStr)
+	if err != nil || licenseCalculationRequestID == 0 {
 		ctx.HTML(http.StatusBadRequest, "license_calculator.html", gin.H{"error": "Неверный ID заявки"})
 		return
 	}
 
 	// Проверяем что заявка существует и не удалена
-	order, err := h.Repository.GetOrderByID(uint(orderID))
+	licenseCalculationRequest, err := h.Repository.GetLicenseCalculationRequestByID(uint(licenseCalculationRequestID))
 	if err != nil {
 		ctx.HTML(http.StatusNotFound, "license_calculator.html", gin.H{"error": "Заявка не найдена или удалена"})
 		return
 	}
 
 	// Получаем услуги в этой заявке
-	services, err := h.Repository.GetServicesInOrder(order.ID)
+	services, err := h.Repository.GetServicesInLicenseCalculationRequest(licenseCalculationRequest.ID)
 	if err != nil {
 		logrus.Error(err)
 		ctx.HTML(http.StatusInternalServerError, "license_calculator.html", gin.H{"error": "Ошибка загрузки услуг"})
@@ -126,9 +126,9 @@ func (h *Handler) GetLicenseCalculator(ctx *gin.Context) {
 	}
 
 	// Параметры берем из заявки (теперь без supportLevel)
-	users := order.Users
-	cores := order.Cores
-	period := order.Period
+	users := licenseCalculationRequest.Users
+	cores := licenseCalculationRequest.Cores
+	period := licenseCalculationRequest.Period
 
 	// Считаем итоговую стоимость
 	var totalCost float64
@@ -136,16 +136,16 @@ func (h *Handler) GetLicenseCalculator(ctx *gin.Context) {
 		totalCost += service.SubTotal
 	}
 
-	count := h.Repository.GetOrderCount(order.ID)
+	count := h.Repository.GetLicenseCalculationRequestCount(licenseCalculationRequest.ID)
 
 	ctx.HTML(http.StatusOK, "license_calculator.html", gin.H{
-		"services":  services,
-		"count":     count,
-		"orderID":   order.ID,
-		"totalCost": totalCost,
-		"users":     users,
-		"cores":     cores,
-		"period":    period,
+		"services":                    services,
+		"count":                       count,
+		"licenseCalculationRequestID": licenseCalculationRequest.ID,
+		"totalCost":                   totalCost,
+		"users":                       users,
+		"cores":                       cores,
+		"period":                      period,
 	})
 }
 
@@ -154,10 +154,10 @@ func (h *Handler) AddModelToCart(ctx *gin.Context) {
 	userID := uint(1)
 
 	// Получаем или СОЗДАЕМ черновик заявки
-	order, err := h.Repository.GetDraftOrder(userID)
+	licenseCalculationRequest, err := h.Repository.GetDraftLicenseCalculationRequest(userID)
 	if err != nil {
 		// Черновика нет - создаем новый
-		order, err = h.Repository.CreateDraftOrder(userID)
+		licenseCalculationRequest, err = h.Repository.CreateDraftLicenseCalculationRequest(userID)
 		if err != nil {
 			h.errorHandler(ctx, http.StatusInternalServerError, err)
 			return
@@ -172,7 +172,7 @@ func (h *Handler) AddModelToCart(ctx *gin.Context) {
 	}
 
 	// Добавляем услугу в заявку (просто связь)
-	err = h.Repository.AddServiceToOrder(order.ID, uint(modelID))
+	err = h.Repository.AddServiceToLicenseCalculationRequest(licenseCalculationRequest.ID, uint(modelID))
 	if err != nil {
 		h.errorHandler(ctx, http.StatusInternalServerError, err)
 		return
@@ -184,13 +184,13 @@ func (h *Handler) AddModelToCart(ctx *gin.Context) {
 // Удаление заявки
 func (h *Handler) DeleteLicenseRequest(ctx *gin.Context) {
 	idStr := ctx.Param("id")
-	orderID, err := strconv.ParseUint(idStr, 10, 32)
+	licenseCalculationRequestID, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
 		h.errorHandler(ctx, http.StatusBadRequest, err)
 		return
 	}
 
-	err = h.Repository.DeleteOrder(uint(orderID))
+	err = h.Repository.DeleteLicenseCalculationRequest(uint(licenseCalculationRequestID))
 	if err != nil {
 		h.errorHandler(ctx, http.StatusInternalServerError, err)
 		return
@@ -202,7 +202,7 @@ func (h *Handler) DeleteLicenseRequest(ctx *gin.Context) {
 // Обновление параметров в калькуляторе
 func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 	idStr := ctx.Param("id")
-	orderID, err := strconv.Atoi(idStr)
+	licenseCalculationRequestID, err := strconv.Atoi(idStr)
 	if err != nil {
 		h.errorHandler(ctx, http.StatusBadRequest, err)
 		return
@@ -230,7 +230,7 @@ func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 	}
 
 	// Обновляем параметры в заявке (общие для всех услуг)
-	err = h.Repository.UpdateOrderParams(uint(orderID), users, cores, period)
+	err = h.Repository.UpdateLicenseCalculationRequestParams(uint(licenseCalculationRequestID), users, cores, period)
 	if err != nil {
 		h.errorHandler(ctx, http.StatusInternalServerError, err)
 		return
@@ -238,7 +238,7 @@ func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 
 	// Обновляем коэффициенты поддержки для каждой услуги
 	// Получаем список всех услуг в заявке
-	services, err := h.Repository.GetServicesInOrder(uint(orderID))
+	services, err := h.Repository.GetServicesInLicenseCalculationRequest(uint(licenseCalculationRequestID))
 	if err == nil {
 		for _, service := range services {
 			// Ищем параметр support_level_<serviceID>
@@ -247,8 +247,8 @@ func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 				if supportLevel, err := strconv.ParseFloat(slStr, 64); err == nil {
 					// service.ID - это ID из license_services
 					// Обновляем коэффициент (валидация 0.7-3.0 внутри метода)
-					logrus.Infof("Updating support level for order=%d, service=%d to %.2f", orderID, service.ID, supportLevel)
-					err := h.Repository.UpdateServiceSupportLevel(uint(orderID), service.ID, supportLevel)
+					logrus.Infof("Updating support level for licenseCalculationRequest=%d, service=%d to %.2f", licenseCalculationRequestID, service.ID, supportLevel)
+					err := h.Repository.UpdateServiceSupportLevel(uint(licenseCalculationRequestID), service.ID, supportLevel)
 					if err != nil {
 						logrus.Errorf("Failed to update support level: %v", err)
 					}
@@ -257,5 +257,5 @@ func (h *Handler) UpdateCalculatorParams(ctx *gin.Context) {
 		}
 	}
 
-	ctx.Redirect(http.StatusFound, fmt.Sprintf("/license-calculator/%d", orderID))
+	ctx.Redirect(http.StatusFound, fmt.Sprintf("/license-calculator/%d", licenseCalculationRequestID))
 }

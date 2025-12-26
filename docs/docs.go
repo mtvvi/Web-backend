@@ -860,7 +860,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/order-services/{order_id}/{service_id}": {
+        "/api/licenseCalculationRequest-services/{licenseCalculationRequest_id}/{service_id}": {
             "put": {
                 "security": [
                     {
@@ -875,14 +875,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Order-Services"
+                    "LicenseCalculationRequest-Services"
                 ],
                 "summary": "Обновление коэффициента поддержки",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "ID заявки",
-                        "name": "order_id",
+                        "name": "licenseCalculationRequest_id",
                         "in": "path",
                         "required": true
                     },
@@ -899,7 +899,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateOrderServiceRequest"
+                            "$ref": "#/definitions/dto.UpdateLicensePaymentRequestServiceRequest"
                         }
                     }
                 ],
@@ -935,14 +935,14 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Order-Services"
+                    "LicenseCalculationRequest-Services"
                 ],
                 "summary": "Удаление услуги из заявки",
                 "parameters": [
                     {
                         "type": "integer",
                         "description": "ID заявки",
-                        "name": "order_id",
+                        "name": "licenseCalculationRequest_id",
                         "in": "path",
                         "required": true
                     },
@@ -976,7 +976,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/orders": {
+        "/api/licenseCalculationRequests": {
             "get": {
                 "security": [
                     {
@@ -988,7 +988,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Получение списка заявок",
                 "parameters": [
@@ -1015,7 +1015,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.OrderListResponse"
+                            "$ref": "#/definitions/dto.LicenseCalculationRequestListResponse"
                         }
                     },
                     "500": {
@@ -1027,7 +1027,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/orders/cart": {
+        "/api/licenseCalculationRequests/cart": {
             "get": {
                 "security": [
                     {
@@ -1039,7 +1039,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Получение информации о корзине",
                 "responses": {
@@ -1052,7 +1052,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/orders/{id}": {
+        "/api/licenseCalculationRequests/{id}": {
             "get": {
                 "security": [
                     {
@@ -1064,7 +1064,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Получение заявки по ID",
                 "parameters": [
@@ -1080,7 +1080,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dto.OrderResponse"
+                            "$ref": "#/definitions/dto.LicenseCalculationRequestResponse"
                         }
                     },
                     "400": {
@@ -1111,7 +1111,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Обновление полей заявки",
                 "parameters": [
@@ -1128,7 +1128,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.UpdateOrderFieldsRequest"
+                            "$ref": "#/definitions/dto.UpdateLicenseCalculationRequestFieldsRequest"
                         }
                     }
                 ],
@@ -1158,7 +1158,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Удаление заявки",
                 "parameters": [
@@ -1186,7 +1186,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/orders/{id}/complete": {
+        "/api/licenseCalculationRequests/{id}/complete": {
             "put": {
                 "security": [
                     {
@@ -1198,7 +1198,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Завершение заявки",
                 "parameters": [
@@ -1226,7 +1226,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/orders/{id}/format": {
+        "/api/licenseCalculationRequests/{id}/format": {
             "put": {
                 "security": [
                     {
@@ -1238,7 +1238,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Формирование заявки",
                 "parameters": [
@@ -1266,7 +1266,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/orders/{id}/reject": {
+        "/api/licenseCalculationRequests/{id}/reject": {
             "put": {
                 "security": [
                     {
@@ -1278,7 +1278,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Orders"
+                    "LicenseCalculationRequests"
                 ],
                 "summary": "Отклонение заявки",
                 "parameters": [
@@ -1536,7 +1536,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/services/{id}/add-to-order": {
+        "/api/services/{id}/add-to-licenseCalculationRequest": {
             "post": {
                 "security": [
                     {
@@ -1772,7 +1772,7 @@ const docTemplate = `{
         "dto.CartResponse": {
             "type": "object",
             "properties": {
-                "order_id": {
+                "licenseCalculationRequest_id": {
                     "description": "ID черновика заявки",
                     "type": "integer"
                 },
@@ -1877,13 +1877,13 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.OrderListResponse": {
+        "dto.LicenseCalculationRequestListResponse": {
             "type": "object",
             "properties": {
-                "orders": {
+                "licenseCalculationRequests": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.OrderResponse"
+                        "$ref": "#/definitions/dto.LicenseCalculationRequestResponse"
                     }
                 },
                 "total": {
@@ -1891,7 +1891,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.OrderResponse": {
+        "dto.LicenseCalculationRequestResponse": {
             "type": "object",
             "properties": {
                 "completed_at": {
@@ -1924,7 +1924,7 @@ const docTemplate = `{
                     "description": "Только для GET одной заявки",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dto.ServiceInOrderResp"
+                        "$ref": "#/definitions/dto.ServiceInLicenseCalculationRequestResp"
                     }
                 },
                 "status": {
@@ -1963,7 +1963,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.ServiceInOrderResp": {
+        "dto.ServiceInLicenseCalculationRequestResp": {
             "type": "object",
             "properties": {
                 "base_price": {
@@ -2042,7 +2042,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UpdateOrderFieldsRequest": {
+        "dto.UpdateLicenseCalculationRequestFieldsRequest": {
             "type": "object",
             "properties": {
                 "core_count": {
@@ -2059,7 +2059,7 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UpdateOrderServiceRequest": {
+        "dto.UpdateLicensePaymentRequestServiceRequest": {
             "type": "object",
             "required": [
                 "support_level"

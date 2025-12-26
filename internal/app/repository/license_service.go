@@ -17,15 +17,15 @@ type LicenseService struct {
 }
 
 // Структура услуги в заявке (данные из license_services + расчет на лету)
-type ServiceInOrder struct {
+type ServiceInLicenseCalculationRequest struct {
 	ID           uint
 	Name         string
 	Description  string
 	ImageURL     string
 	BasePrice    float64
 	LicenseType  string
-	SupportLevel float64 // Индивидуальный коэффициент из OrderService
-	// Расчетные поля (вычисляются на лету из LicenseOrder)
+	SupportLevel float64 // Индивидуальный коэффициент из LicensePaymentRequestService
+	// Расчетные поля (вычисляются на лету из LicensePaymentRequest)
 	SubTotal float64 // BasePrice × quantity × SupportLevel
 }
 
@@ -128,42 +128,42 @@ func (r *Repository) SearchServicesByName(name string) ([]LicenseService, error)
 // Методы для М-М связей (простая связь услуг с заявкой)
 
 // Добавить услугу в заявку (с дефолтным коэффициентом поддержки)
-func (r *Repository) AddServiceToOrder(orderID, serviceID uint) error {
+func (r *Repository) AddServiceToLicenseCalculationRequest(licenseCalculationRequestID, serviceID uint) error {
 	// Проверяем, не добавлена ли уже эта услуга
-	var existing ds.OrderService
-	err := r.db.Where("order_id = ? AND service_id = ?", orderID, serviceID).First(&existing).Error
+	var existing ds.LicensePaymentRequestService
+	err := r.db.Where("license_calculation_request_id = ? AND service_id = ?", licenseCalculationRequestID, serviceID).First(&existing).Error
 
 	if err == nil {
-		// Услуга уже есть в заявке - просто игнорируем (не ошибка)
+		// Лицензия уже есть в заявке - просто игнорируем (не ошибка)
 		return nil
 	}
 
-	// Услуги нет - добавляем
-	orderService := ds.OrderService{
-		OrderID:      orderID,
-		ServiceID:    serviceID,
-		SupportLevel: 1.0, // По умолчанию
-		SubTotal:     0,   // Будет пересчитано
+	// Лицензии нет - добавляем
+	licenseCalculationRequestService := ds.LicensePaymentRequestService{
+		LicenseCalculationRequestID: licenseCalculationRequestID,
+		ServiceID:                   serviceID,
+		SupportLevel:                1.0, // По умолчанию
+		SubTotal:                    0,   // Будет пересчитано
 	}
-	err = r.db.Create(&orderService).Error
+	err = r.db.Create(&licenseCalculationRequestService).Error
 	if err != nil {
 		return err
 	}
 
 	// Пересчитываем стоимости после добавления услуги
-	return r.RecalculateOrderCosts(orderID)
+	return r.RecalculateLicenseCalculationRequestCosts(licenseCalculationRequestID)
 }
 
-// Удалить услугу из заявки (по orderID и serviceID, без ID м-м)
-func (r *Repository) RemoveServiceFromOrder(orderID, serviceID uint) error {
-	err := r.db.Where("order_id = ? AND service_id = ?", orderID, serviceID).
-		Delete(&ds.OrderService{}).Error
+// Удалить услугу из заявки (по licenseCalculationRequestID и serviceID, без ID м-м)
+func (r *Repository) RemoveServiceFromLicenseCalculationRequest(licenseCalculationRequestID, serviceID uint) error {
+	err := r.db.Where("license_calculation_request_id = ? AND service_id = ?", licenseCalculationRequestID, serviceID).
+		Delete(&ds.LicensePaymentRequestService{}).Error
 	if err != nil {
 		return err
 	}
 
 	// Пересчитываем стоимости после удаления услуги
-	return r.RecalculateOrderCosts(orderID)
+	return r.RecalculateLicenseCalculationRequestCosts(licenseCalculationRequestID)
 }
 
 // Создать новую услугу

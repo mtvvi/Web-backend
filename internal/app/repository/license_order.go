@@ -10,8 +10,8 @@ import (
 // Методы для работы с заявками
 
 // SQL операция для логического удаления
-func (r *Repository) DeleteOrder(orderID uint) error {
-	result := r.db.Exec("UPDATE license_orders SET status = 'удалён' WHERE id = ? AND status = 'черновик'", orderID)
+func (r *Repository) DeleteLicenseCalculationRequest(licenseCalculationRequestID uint) error {
+	result := r.db.Exec("UPDATE license_payment_requests SET status = 'удалён' WHERE id = ? AND status = 'черновик'", licenseCalculationRequestID)
 
 	if result.Error != nil {
 		return result.Error
@@ -24,25 +24,25 @@ func (r *Repository) DeleteOrder(orderID uint) error {
 	return nil
 }
 
-func (r *Repository) GetOrderServices(orderID uint) ([]ds.OrderService, error) {
-	var orderServices []ds.OrderService
-	err := r.db.Where("order_id = ?", orderID).Find(&orderServices).Error
-	return orderServices, err
+func (r *Repository) GetLicensePaymentRequestServices(licenseCalculationRequestID uint) ([]ds.LicensePaymentRequestService, error) {
+	var licenseCalculationRequestServices []ds.LicensePaymentRequestService
+	err := r.db.Where("license_calculation_request_id = ?", licenseCalculationRequestID).Find(&licenseCalculationRequestServices).Error
+	return licenseCalculationRequestServices, err
 }
 
 // Получить черновик заявки для пользователя (если есть)
-func (r *Repository) GetDraftOrder(userID uint) (*ds.LicenseOrder, error) {
-	var order ds.LicenseOrder
-	err := r.db.Where("creator_id = ? AND status = ?", userID, "черновик").First(&order).Error
+func (r *Repository) GetDraftLicenseCalculationRequest(userID uint) (*ds.LicensePaymentRequest, error) {
+	var licenseCalculationRequest ds.LicensePaymentRequest
+	err := r.db.Where("creator_id = ? AND status = ?", userID, "черновик").First(&licenseCalculationRequest).Error
 	if err != nil {
 		return nil, err
 	}
-	return &order, nil
+	return &licenseCalculationRequest, nil
 }
 
 // Создать новую заявку в статусе черновик
-func (r *Repository) CreateDraftOrder(userID uint) (*ds.LicenseOrder, error) {
-	order := ds.LicenseOrder{
+func (r *Repository) CreateDraftLicenseCalculationRequest(userID uint) (*ds.LicensePaymentRequest, error) {
+	licenseCalculationRequest := ds.LicensePaymentRequest{
 		Status:    "черновик",
 		CreatedAt: time.Now(),
 		CreatorID: userID,
@@ -51,80 +51,80 @@ func (r *Repository) CreateDraftOrder(userID uint) (*ds.LicenseOrder, error) {
 		Period:    0,
 	}
 
-	err := r.db.Create(&order).Error
+	err := r.db.Create(&licenseCalculationRequest).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return &order, nil
+	return &licenseCalculationRequest, nil
 }
 
 // Получить заявку по ID (только если она не удалена)
-func (r *Repository) GetOrderByID(orderID uint) (*ds.LicenseOrder, error) {
-	var order ds.LicenseOrder
-	err := r.db.Where("id = ? AND status != ?", orderID, "удалён").First(&order).Error
+func (r *Repository) GetLicenseCalculationRequestByID(licenseCalculationRequestID uint) (*ds.LicensePaymentRequest, error) {
+	var licenseCalculationRequest ds.LicensePaymentRequest
+	err := r.db.Where("id = ? AND status != ?", licenseCalculationRequestID, "удалён").First(&licenseCalculationRequest).Error
 	if err != nil {
 		return nil, err
 	}
-	return &order, nil
+	return &licenseCalculationRequest, nil
 }
 
 // Получить заявку или вернуть ошибку
-func (r *Repository) GetOrCreateOrder(id uint) (*ds.LicenseOrder, error) {
-	var order ds.LicenseOrder
-	err := r.db.Where("id = ? AND status != ?", id, "удалён").First(&order).Error
+func (r *Repository) GetOrCreateLicenseCalculationRequest(id uint) (*ds.LicensePaymentRequest, error) {
+	var licenseCalculationRequest ds.LicensePaymentRequest
+	err := r.db.Where("id = ? AND status != ?", id, "удалён").First(&licenseCalculationRequest).Error
 	if err != nil {
 		return nil, fmt.Errorf("заявка не найдена")
 	}
-	return &order, nil
+	return &licenseCalculationRequest, nil
 }
 
-// RecalculateOrderCosts пересчитывает стоимость всех услуг в заявке и сохраняет в БД
+// RecalculateLicenseCalculationRequestCosts пересчитывает стоимость всех услуг в заявке и сохраняет в БД
 // ВАЖНО: не рассчитывает sub_total (это делает асинхронный сервис), только суммирует существующие
-func (r *Repository) RecalculateOrderCosts(orderID uint) error {
+func (r *Repository) RecalculateLicenseCalculationRequestCosts(licenseCalculationRequestID uint) error {
 	// Получаем все связи заявка-услуга
-	var orderServices []ds.OrderService
-	err := r.db.Where("order_id = ?", orderID).Find(&orderServices).Error
+	var licenseCalculationRequestServices []ds.LicensePaymentRequestService
+	err := r.db.Where("license_calculation_request_id = ?", licenseCalculationRequestID).Find(&licenseCalculationRequestServices).Error
 	if err != nil {
 		return err
 	}
 
-	if len(orderServices) == 0 {
+	if len(licenseCalculationRequestServices) == 0 {
 		// Если услуг нет, обнуляем total_cost
-		return r.db.Model(&ds.LicenseOrder{}).Where("id = ?", orderID).Update("total_cost", 0).Error
+		return r.db.Model(&ds.LicensePaymentRequest{}).Where("id = ?", licenseCalculationRequestID).Update("total_cost", 0).Error
 	}
 
 	// Суммируем существующие sub_total (расчет происходит асинхронно)
 	var totalCost float64
-	for _, os := range orderServices {
+	for _, os := range licenseCalculationRequestServices {
 		totalCost += os.SubTotal
 	}
 
 	// Обновляем total_cost в заявке
-	return r.db.Model(&ds.LicenseOrder{}).Where("id = ?", orderID).Update("total_cost", totalCost).Error
+	return r.db.Model(&ds.LicensePaymentRequest{}).Where("id = ?", licenseCalculationRequestID).Update("total_cost", totalCost).Error
 }
 
 // Получить услуги в заявке (теперь из БД)
-func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) {
+func (r *Repository) GetServicesInLicenseCalculationRequest(licenseCalculationRequestID uint) ([]ServiceInLicenseCalculationRequest, error) {
 	// Проверяем что заявка существует и не удалена
-	order, err := r.GetOrderByID(orderID)
+	licenseCalculationRequest, err := r.GetLicenseCalculationRequestByID(licenseCalculationRequestID)
 	if err != nil {
 		return nil, err
 	}
 
-	var orderServices []ds.OrderService
-	err = r.db.Where("order_id = ?", order.ID).Find(&orderServices).Error
+	var licenseCalculationRequestServices []ds.LicensePaymentRequestService
+	err = r.db.Where("license_calculation_request_id = ?", licenseCalculationRequest.ID).Find(&licenseCalculationRequestServices).Error
 	if err != nil {
 		return nil, err
 	}
 
-	if len(orderServices) == 0 {
-		return []ServiceInOrder{}, nil
+	if len(licenseCalculationRequestServices) == 0 {
+		return []ServiceInLicenseCalculationRequest{}, nil
 	}
 
 	// Получаем ID услуг
 	var serviceIDs []uint
-	for _, os := range orderServices {
+	for _, os := range licenseCalculationRequestServices {
 		serviceIDs = append(serviceIDs, os.ServiceID)
 	}
 
@@ -141,11 +141,11 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 	}
 
 	// Создаем список услуг с расчетом стоимости ИЗ БД
-	services := make([]ServiceInOrder, 0, len(orderServices))
-	for _, os := range orderServices {
+	services := make([]ServiceInLicenseCalculationRequest, 0, len(licenseCalculationRequestServices))
+	for _, os := range licenseCalculationRequestServices {
 		s, exists := serviceMap[os.ServiceID]
 		if !exists {
-			continue // Услуга удалена
+			continue // Лицензия удалена
 		}
 
 		imageURL := "rectangle-2-6.png"
@@ -154,7 +154,7 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 		}
 
 		// Берем subtotal из БД
-		services = append(services, ServiceInOrder{
+		services = append(services, ServiceInLicenseCalculationRequest{
 			ID:           s.ID,
 			Name:         s.Name,
 			Description:  s.Description,
@@ -169,22 +169,22 @@ func (r *Repository) GetServicesInOrder(orderID uint) ([]ServiceInOrder, error) 
 }
 
 // Обнулить все sub_total для заявки (перед асинхронным перерасчетом)
-func (r *Repository) ResetOrderSubTotals(orderID uint) error {
-	if err := r.db.Model(&ds.OrderService{}).
-		Where("order_id = ?", orderID).
+func (r *Repository) ResetLicenseCalculationRequestSubTotals(licenseCalculationRequestID uint) error {
+	if err := r.db.Model(&ds.LicensePaymentRequestService{}).
+		Where("license_calculation_request_id = ?", licenseCalculationRequestID).
 		Update("sub_total", 0).Error; err != nil {
 		return err
 	}
 
-	return r.db.Model(&ds.LicenseOrder{}).
-		Where("id = ?", orderID).
+	return r.db.Model(&ds.LicensePaymentRequest{}).
+		Where("id = ?", licenseCalculationRequestID).
 		Update("total_cost", 0).Error
 }
 
 // Установить sub_total для услуги и пересчитать total_cost как сумму sub_total
-func (r *Repository) UpdateOrderSubTotal(orderID, serviceID uint, subTotal float64) error {
-	result := r.db.Model(&ds.OrderService{}).
-		Where("order_id = ? AND service_id = ?", orderID, serviceID).
+func (r *Repository) UpdateLicenseCalculationRequestSubTotal(licenseCalculationRequestID, serviceID uint, subTotal float64) error {
+	result := r.db.Model(&ds.LicensePaymentRequestService{}).
+		Where("license_calculation_request_id = ? AND service_id = ?", licenseCalculationRequestID, serviceID).
 		Update("sub_total", subTotal)
 	if result.Error != nil {
 		return result.Error
@@ -195,27 +195,27 @@ func (r *Repository) UpdateOrderSubTotal(orderID, serviceID uint, subTotal float
 
 	// Считаем сумму
 	var sum float64
-	err := r.db.Model(&ds.OrderService{}).
-		Where("order_id = ?", orderID).
+	err := r.db.Model(&ds.LicensePaymentRequestService{}).
+		Where("license_calculation_request_id = ?", licenseCalculationRequestID).
 		Select("COALESCE(SUM(sub_total), 0)").Scan(&sum).Error
 	if err != nil {
 		return err
 	}
 
-	return r.db.Model(&ds.LicenseOrder{}).
-		Where("id = ?", orderID).
+	return r.db.Model(&ds.LicensePaymentRequest{}).
+		Where("id = ?", licenseCalculationRequestID).
 		Update("total_cost", sum).Error
 }
 
 // Получить количество услуг в заявке (количество записей, не сумму)
-func (r *Repository) GetOrderCount(orderID uint) int {
-	order, err := r.GetOrderByID(orderID)
+func (r *Repository) GetLicenseCalculationRequestCount(licenseCalculationRequestID uint) int {
+	licenseCalculationRequest, err := r.GetLicenseCalculationRequestByID(licenseCalculationRequestID)
 	if err != nil {
 		return 0
 	}
 
 	var count int64
-	err = r.db.Model(&ds.OrderService{}).Where("order_id = ?", order.ID).Count(&count).Error
+	err = r.db.Model(&ds.LicensePaymentRequestService{}).Where("license_calculation_request_id = ?", licenseCalculationRequest.ID).Count(&count).Error
 	if err != nil {
 		return 0
 	}
@@ -224,15 +224,15 @@ func (r *Repository) GetOrderCount(orderID uint) int {
 }
 
 // Количество услуг в заявке, для которых рассчитан sub_total (>0)
-func (r *Repository) CountCalculatedServices(orderID uint) int {
-	order, err := r.GetOrderByID(orderID)
+func (r *Repository) CountCalculatedServices(licenseCalculationRequestID uint) int {
+	licenseCalculationRequest, err := r.GetLicenseCalculationRequestByID(licenseCalculationRequestID)
 	if err != nil {
 		return 0
 	}
 
 	var count int64
-	err = r.db.Model(&ds.OrderService{}).
-		Where("order_id = ? AND sub_total > 0", order.ID).
+	err = r.db.Model(&ds.LicensePaymentRequestService{}).
+		Where("license_calculation_request_id = ? AND sub_total > 0", licenseCalculationRequest.ID).
 		Count(&count).Error
 	if err != nil {
 		return 0
@@ -244,13 +244,13 @@ func (r *Repository) CountCalculatedServices(orderID uint) int {
 // Получить количество в корзине (черновик для пользователя)
 func (r *Repository) GetCartCount() int {
 	userID := uint(1)
-	order, err := r.GetDraftOrder(userID)
+	licenseCalculationRequest, err := r.GetDraftLicenseCalculationRequest(userID)
 	if err != nil {
 		return 0 // Нет черновика - корзина пуста
 	}
 
 	var count int64
-	err = r.db.Model(&ds.OrderService{}).Where("order_id = ?", order.ID).Count(&count).Error
+	err = r.db.Model(&ds.LicensePaymentRequestService{}).Where("license_calculation_request_id = ?", licenseCalculationRequest.ID).Count(&count).Error
 	if err != nil {
 		return 0
 	}
@@ -259,18 +259,18 @@ func (r *Repository) GetCartCount() int {
 }
 
 // Получить ID черновика заявки (или 0 если нет)
-func (r *Repository) GetDraftOrderID(userID uint) uint {
-	order, err := r.GetDraftOrder(userID)
+func (r *Repository) GetDraftLicenseCalculationRequestID(userID uint) uint {
+	licenseCalculationRequest, err := r.GetDraftLicenseCalculationRequest(userID)
 	if err != nil {
 		return 0
 	}
-	return order.ID
+	return licenseCalculationRequest.ID
 }
 
 // Обновить параметры расчета в заявке (теперь без supportLevel)
-func (r *Repository) UpdateOrderParams(orderID uint, users, cores, period int) error {
-	return r.db.Model(&ds.LicenseOrder{}).
-		Where("id = ?", orderID).
+func (r *Repository) UpdateLicenseCalculationRequestParams(licenseCalculationRequestID uint, users, cores, period int) error {
+	return r.db.Model(&ds.LicensePaymentRequest{}).
+		Where("id = ?", licenseCalculationRequestID).
 		Updates(map[string]interface{}{
 			"users":  users,
 			"cores":  cores,
@@ -279,7 +279,7 @@ func (r *Repository) UpdateOrderParams(orderID uint, users, cores, period int) e
 }
 
 // Обновить коэффициент поддержки для конкретной услуги в заявке
-func (r *Repository) UpdateServiceSupportLevel(orderID, serviceID uint, supportLevel float64) error {
+func (r *Repository) UpdateServiceSupportLevel(licenseCalculationRequestID, serviceID uint, supportLevel float64) error {
 	// Ограничиваем значение в диапазоне 0.7 - 3.0
 	if supportLevel < 0.7 {
 		supportLevel = 0.7
@@ -288,20 +288,20 @@ func (r *Repository) UpdateServiceSupportLevel(orderID, serviceID uint, supportL
 		supportLevel = 3.0
 	}
 
-	err := r.db.Model(&ds.OrderService{}).
-		Where("order_id = ? AND service_id = ?", orderID, serviceID).
+	err := r.db.Model(&ds.LicensePaymentRequestService{}).
+		Where("license_calculation_request_id = ? AND service_id = ?", licenseCalculationRequestID, serviceID).
 		Update("support_level", supportLevel).Error
 	if err != nil {
 		return err
 	}
 
 	// Пересчитываем стоимость после изменения коэффициента
-	return r.RecalculateOrderCosts(orderID)
+	return r.RecalculateLicenseCalculationRequestCosts(licenseCalculationRequestID)
 }
 
 // Получить все заявки с фильтрацией (кроме удаленных и черновиков)
-func (r *Repository) GetOrders(status string, dateFrom, dateTo *time.Time, creatorID *uint) ([]ds.LicenseOrder, error) {
-	query := r.db.Model(&ds.LicenseOrder{})
+func (r *Repository) GetLicenseCalculationRequests(status string, dateFrom, dateTo *time.Time, creatorID *uint) ([]ds.LicensePaymentRequest, error) {
+	query := r.db.Model(&ds.LicensePaymentRequest{})
 
 	// Фильтрация по создателю (для обычных пользователей)
 	if creatorID != nil {
@@ -313,20 +313,22 @@ func (r *Repository) GetOrders(status string, dateFrom, dateTo *time.Time, creat
 	}
 
 	if dateFrom != nil {
-		query = query.Where("formatted_at >= ?", dateFrom)
+		// Сравниваем только дату, игнорируя время
+		query = query.Where("DATE(formatted_at) >= DATE(?)", dateFrom)
 	}
 
 	if dateTo != nil {
-		query = query.Where("formatted_at <= ?", dateTo)
+		// Сравниваем только дату, игнорируя время
+		query = query.Where("DATE(formatted_at) <= DATE(?)", dateTo)
 	}
 
-	var orders []ds.LicenseOrder
-	err := query.Preload("Creator").Preload("Moderator").Order("created_at DESC").Find(&orders).Error
-	return orders, err
+	var licenseCalculationRequests []ds.LicensePaymentRequest
+	err := query.Preload("Creator").Preload("Moderator").Order("created_at DESC").Find(&licenseCalculationRequests).Error
+	return licenseCalculationRequests, err
 }
 
 // Обновить поля заявки (только допустимые для изменения)
-func (r *Repository) UpdateOrderFields(orderID uint, users, cores, period *int) error {
+func (r *Repository) UpdateLicenseCalculationRequestFields(licenseCalculationRequestID uint, users, cores, period *int) error {
 	updates := make(map[string]interface{})
 
 	if users != nil {
@@ -343,50 +345,50 @@ func (r *Repository) UpdateOrderFields(orderID uint, users, cores, period *int) 
 		return nil
 	}
 
-	err := r.db.Model(&ds.LicenseOrder{}).
-		Where("id = ? AND status = ?", orderID, "черновик").
+	err := r.db.Model(&ds.LicensePaymentRequest{}).
+		Where("id = ? AND status = ?", licenseCalculationRequestID, "черновик").
 		Updates(updates).Error
 	if err != nil {
 		return err
 	}
 
 	// Пересчитываем стоимость после изменения параметров
-	return r.RecalculateOrderCosts(orderID)
+	return r.RecalculateLicenseCalculationRequestCosts(licenseCalculationRequestID)
 }
 
 // Сформировать заявку (создателем)
-func (r *Repository) FormatOrder(orderID uint) error {
+func (r *Repository) FormatLicenseCalculationRequest(licenseCalculationRequestID uint) error {
 	// Проверяем обязательные поля
-	var order ds.LicenseOrder
-	err := r.db.Where("id = ? AND status = ?", orderID, "черновик").First(&order).Error
+	var licenseCalculationRequest ds.LicensePaymentRequest
+	err := r.db.Where("id = ? AND status = ?", licenseCalculationRequestID, "черновик").First(&licenseCalculationRequest).Error
 	if err != nil {
 		return errors.New("заявка не найдена или не в статусе черновик")
 	}
 
 	// Проверяем наличие услуг в заявке
 	var count int64
-	r.db.Model(&ds.OrderService{}).Where("order_id = ?", orderID).Count(&count)
+	r.db.Model(&ds.LicensePaymentRequestService{}).Where("license_calculation_request_id = ?", licenseCalculationRequestID).Count(&count)
 	if count == 0 {
 		return errors.New("нельзя сформировать пустую заявку")
 	}
 
 	// Проверяем обязательные поля
-	if order.Users <= 0 && order.Cores <= 0 {
+	if licenseCalculationRequest.Users <= 0 && licenseCalculationRequest.Cores <= 0 {
 		return errors.New("необходимо указать количество пользователей или ядер")
 	}
-	if order.Period <= 0 {
+	if licenseCalculationRequest.Period <= 0 {
 		return errors.New("необходимо указать период лицензирования")
 	}
 
 	// Обнуляем sub_total для всех услуг (расчет будет в асинхронном сервисе после завершения)
-	err = r.ResetOrderSubTotals(orderID)
+	err = r.ResetLicenseCalculationRequestSubTotals(licenseCalculationRequestID)
 	if err != nil {
 		return err
 	}
 
 	now := time.Now()
-	return r.db.Model(&ds.LicenseOrder{}).
-		Where("id = ?", orderID).
+	return r.db.Model(&ds.LicensePaymentRequest{}).
+		Where("id = ?", licenseCalculationRequestID).
 		Updates(map[string]interface{}{
 			"status":       "сформирован",
 			"formatted_at": now,
@@ -394,16 +396,16 @@ func (r *Repository) FormatOrder(orderID uint) error {
 }
 
 // Завершить заявку (модератором) с расчетом стоимости
-func (r *Repository) CompleteOrder(orderID, moderatorID uint) error {
-	var order ds.LicenseOrder
-	err := r.db.Where("id = ? AND status = ?", orderID, "сформирован").First(&order).Error
+func (r *Repository) CompleteLicenseCalculationRequest(licenseCalculationRequestID, moderatorID uint) error {
+	var licenseCalculationRequest ds.LicensePaymentRequest
+	err := r.db.Where("id = ? AND status = ?", licenseCalculationRequestID, "сформирован").First(&licenseCalculationRequest).Error
 	if err != nil {
 		return errors.New("заявка не найдена или не в статусе сформирован")
 	}
 
 	now := time.Now()
-	return r.db.Model(&ds.LicenseOrder{}).
-		Where("id = ?", orderID).
+	return r.db.Model(&ds.LicensePaymentRequest{}).
+		Where("id = ?", licenseCalculationRequestID).
 		Updates(map[string]interface{}{
 			"status":       "завершён",
 			"completed_at": now,
@@ -412,16 +414,16 @@ func (r *Repository) CompleteOrder(orderID, moderatorID uint) error {
 }
 
 // Отклонить заявку (модератором)
-func (r *Repository) RejectOrder(orderID, moderatorID uint) error {
-	var order ds.LicenseOrder
-	err := r.db.Where("id = ? AND status = ?", orderID, "сформирован").First(&order).Error
+func (r *Repository) RejectLicenseCalculationRequest(licenseCalculationRequestID, moderatorID uint) error {
+	var licenseCalculationRequest ds.LicensePaymentRequest
+	err := r.db.Where("id = ? AND status = ?", licenseCalculationRequestID, "сформирован").First(&licenseCalculationRequest).Error
 	if err != nil {
 		return errors.New("заявка не найдена или не в статусе сформирован")
 	}
 
 	now := time.Now()
-	return r.db.Model(&ds.LicenseOrder{}).
-		Where("id = ?", orderID).
+	return r.db.Model(&ds.LicensePaymentRequest{}).
+		Where("id = ?", licenseCalculationRequestID).
 		Updates(map[string]interface{}{
 			"status":       "отклонён",
 			"completed_at": now,
@@ -430,21 +432,21 @@ func (r *Repository) RejectOrder(orderID, moderatorID uint) error {
 }
 
 // Получить заявку с услугами и расчетом стоимости
-func (r *Repository) GetOrderWithServices(orderID uint) (*ds.LicenseOrder, []ServiceInOrder, float64, error) {
-	var order ds.LicenseOrder
-	err := r.db.Where("id = ? AND status != ?", orderID, "удалён").
+func (r *Repository) GetLicenseCalculationRequestWithServices(licenseCalculationRequestID uint) (*ds.LicensePaymentRequest, []ServiceInLicenseCalculationRequest, float64, error) {
+	var licenseCalculationRequest ds.LicensePaymentRequest
+	err := r.db.Where("id = ? AND status != ?", licenseCalculationRequestID, "удалён").
 		Preload("Creator").
 		Preload("Moderator").
-		First(&order).Error
+		First(&licenseCalculationRequest).Error
 	if err != nil {
 		return nil, nil, 0, err
 	}
 
-	services, err := r.GetServicesInOrder(orderID)
+	services, err := r.GetServicesInLicenseCalculationRequest(licenseCalculationRequestID)
 	if err != nil {
 		return nil, nil, 0, err
 	}
 
 	// Возвращаем TotalCost из БД
-	return &order, services, order.TotalCost, nil
+	return &licenseCalculationRequest, services, licenseCalculationRequest.TotalCost, nil
 }
