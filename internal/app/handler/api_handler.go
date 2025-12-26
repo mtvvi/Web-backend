@@ -911,7 +911,7 @@ func (h *APIHandler) DeleteLicenseCalculationRequest(c *gin.Context) {
 func (h *APIHandler) ReceiveSubtotalResult(c *gin.Context) {
 	// Псевдо-авторизация через статичный ключ
 	if c.GetHeader("X-Async-Key") != asyncSecretKey {
-		h.errorResponse(c, http.StatusUnauthorized, "Неверный async ключ")
+		h.errorResponse(c, http.StatusForbidden, "недопустимый async ключ")
 		return
 	}
 
